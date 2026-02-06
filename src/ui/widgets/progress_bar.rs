@@ -46,6 +46,7 @@ pub fn render_progress_bar(frame: &mut Frame, area: Rect, app: &App, theme: &The
 
     let gauge = Gauge::default()
         .ratio(ratio)
+        .label("")
         .gauge_style(Style::default().fg(theme.progress_filled).bg(theme.progress_empty));
     frame.render_widget(gauge, cols[1]);
 

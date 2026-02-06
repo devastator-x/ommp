@@ -1,5 +1,5 @@
 use ratatui::layout::{Alignment, Rect};
-use ratatui::style::Style;
+use ratatui::style::{Color, Style};
 use ratatui::text::{Line, Span};
 use ratatui::widgets::{Block, Borders, Paragraph};
 use ratatui::Frame;
@@ -7,7 +7,13 @@ use ratatui::Frame;
 use crate::app::state::Tab;
 use crate::ui::theme::Theme;
 
-pub fn render_tab_bar(frame: &mut Frame, area: Rect, current: Tab, theme: &Theme) {
+pub fn render_tab_bar(
+    frame: &mut Frame,
+    area: Rect,
+    current: Tab,
+    hovered: Option<usize>,
+    theme: &Theme,
+) {
     let block = Block::default()
         .borders(Borders::ALL)
         .border_style(Style::default().fg(theme.border_unfocused));
@@ -15,14 +21,17 @@ pub fn render_tab_bar(frame: &mut Frame, area: Rect, current: Tab, theme: &Theme
     let inner = block.inner(area);
     frame.render_widget(block, area);
 
-    // Build tab spans manually for center alignment
+    let tab_hover_style = Style::default().fg(Color::Cyan);
+
     let mut spans = Vec::new();
     for (i, tab) in Tab::ALL.iter().enumerate() {
         if i > 0 {
-            spans.push(Span::styled(" │ ", theme.dim_style));
+            spans.push(Span::styled(" \u{2502} ", theme.dim_style));
         }
         let style = if i == current.index() {
             theme.tab_active
+        } else if hovered == Some(i) {
+            tab_hover_style
         } else {
             theme.tab_inactive
         };

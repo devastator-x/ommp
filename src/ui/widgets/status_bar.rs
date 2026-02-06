@@ -89,18 +89,31 @@ pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
 
     // Right: Volume + shuffle/repeat
     let vol_pct = (app.playback.volume * 100.0) as u8;
-    let shuffle_icon = if app.playback.shuffle { "🔀" } else { "⇥" };
-    let repeat_icon = app.playback.repeat.symbol();
+
+    let shuffle_color = if app.playback.shuffle { Color::Cyan } else { Color::DarkGray };
+    let shuffle_label = if app.playback.shuffle { "shuffle " } else { "" };
+
+    let (repeat_color, repeat_label) = match app.playback.repeat {
+        crate::app::state::RepeatMode::Off => (Color::DarkGray, ""),
+        crate::app::state::RepeatMode::All => (Color::Cyan, "all "),
+        crate::app::state::RepeatMode::One => (Color::Yellow, "one "),
+    };
 
     let right_line1 = Line::from(Span::styled(
         format!("Vol: {}% ", vol_pct),
         Style::default().fg(Color::White),
     )).alignment(Alignment::Right);
 
-    let right_line2 = Line::from(Span::styled(
-        format!("{} {} ", shuffle_icon, repeat_icon),
-        Style::default().fg(Color::Yellow),
-    )).alignment(Alignment::Right);
+    let right_line2 = Line::from(vec![
+        Span::styled(
+            format!("\u{21C6} {}", shuffle_label),
+            Style::default().fg(shuffle_color),
+        ),
+        Span::styled(
+            format!("{} {}", app.playback.repeat.symbol(), repeat_label),
+            Style::default().fg(repeat_color),
+        ),
+    ]).alignment(Alignment::Right);
 
     let right = Paragraph::new(vec![right_line1, right_line2]);
     frame.render_widget(right, cols[2]);

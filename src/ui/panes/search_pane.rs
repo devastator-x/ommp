@@ -13,6 +13,7 @@ pub struct SearchPane {
     pub selected: usize,
     pub scroll_offset: usize,
     pub input_mode: bool,
+    pub hover_row: Option<usize>,
 }
 
 impl SearchPane {
@@ -21,6 +22,7 @@ impl SearchPane {
             selected: 0,
             scroll_offset: 0,
             input_mode: false,
+            hover_row: None,
         }
     }
 }
@@ -196,8 +198,10 @@ impl Pane for SearchPane {
         }
         if up {
             self.scroll_offset = self.scroll_offset.saturating_sub(3);
+            self.selected = self.selected.saturating_sub(3);
         } else {
             self.scroll_offset = (self.scroll_offset + 3).min(count.saturating_sub(1));
+            self.selected = (self.selected + 3).min(count.saturating_sub(1));
         }
         None
     }

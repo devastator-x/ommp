@@ -10,13 +10,19 @@ use crate::app::{App, AppAction};
 use crate::ui::pane::Pane;
 use crate::ui::theme::Theme;
 
+const HOVER_BG: Color = Color::Indexed(238); // very dark gray
+
 pub struct QueuePane {
     pub scroll_offset: usize,
+    pub hover_row: Option<usize>,
 }
 
 impl QueuePane {
     pub fn new() -> Self {
-        Self { scroll_offset: 0 }
+        Self {
+            scroll_offset: 0,
+            hover_row: None,
+        }
     }
 }
 
@@ -128,14 +134,24 @@ impl Pane for QueuePane {
                 let cur_style = theme.current_track_style;
                 let normal_style = Style::default().fg(theme.fg);
 
+                let is_hovered = self.hover_row == Some(i);
+
                 let (title_style, ext_style, dur_style, prefix_style) = if is_selected && focused {
                     (sel_style, sel_style, sel_style, sel_style)
                 } else if is_current {
+                    let bg = if is_hovered { HOVER_BG } else { Color::Reset };
                     (
-                        cur_style,
-                        Style::default().fg(format_color(&ext)).add_modifier(Modifier::BOLD),
-                        Style::default().fg(Color::DarkGray),
-                        cur_style,
+                        cur_style.bg(bg),
+                        Style::default().fg(format_color(&ext)).add_modifier(Modifier::BOLD).bg(bg),
+                        Style::default().fg(Color::DarkGray).bg(bg),
+                        cur_style.bg(bg),
+                    )
+                } else if is_hovered {
+                    (
+                        normal_style.bg(HOVER_BG),
+                        Style::default().fg(format_color(&ext)).bg(HOVER_BG),
+                        Style::default().fg(Color::DarkGray).bg(HOVER_BG),
+                        normal_style.bg(HOVER_BG),
                     )
                 } else {
                     (
@@ -244,9 +260,12 @@ impl Pane for QueuePane {
         }
         if up {
             self.scroll_offset = self.scroll_offset.saturating_sub(3);
+            let new_sel = app.queue.selected_index.saturating_sub(3);
+            Some(AppAction::SetQueueSelection(new_sel))
         } else {
             self.scroll_offset = (self.scroll_offset + 3).min(count.saturating_sub(1));
+            let new_sel = (app.queue.selected_index + 3).min(count.saturating_sub(1));
+            Some(AppAction::SetQueueSelection(new_sel))
         }
-        None
     }
 }

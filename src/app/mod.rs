@@ -33,6 +33,7 @@ pub enum AppAction {
     PlayQueueIndex(usize),
     UpdatePosition { position_secs: f64, duration_secs: f64 },
     TrackFinished,
+    SetQueueSelection(usize),
     SearchQuery(String),
     EnterSearchMode,
     ExitSearchMode,
@@ -217,6 +218,11 @@ impl App {
             }
             AppAction::TrackFinished => {
                 self.play_next();
+            }
+            AppAction::SetQueueSelection(idx) => {
+                if idx < self.queue.tracks.len() {
+                    self.queue.selected_index = idx;
+                }
             }
             AppAction::SearchQuery(query) => {
                 self.search_results = self.library.search(&query);

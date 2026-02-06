@@ -1,17 +1,20 @@
 use crossterm::event::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use ratatui::layout::Rect;
-use ratatui::style::{Modifier, Style};
+use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, List, ListItem};
+use ratatui::widgets::{Block, Borders, List, ListItem, Scrollbar, ScrollbarOrientation, ScrollbarState};
 use ratatui::Frame;
 
 use crate::app::{App, AppAction};
 use crate::ui::pane::Pane;
 use crate::ui::theme::Theme;
 
+const HOVER_BG: Color = Color::Indexed(238);
+
 pub struct AlbumsPane {
     pub selected: usize,
     pub scroll_offset: usize,
+    pub hover_row: Option<usize>,
 }
 
 impl AlbumsPane {
@@ -19,6 +22,7 @@ impl AlbumsPane {
         Self {
             selected: 0,
             scroll_offset: 0,
+            hover_row: None,
         }
     }
 }
@@ -26,6 +30,7 @@ impl AlbumsPane {
 impl Pane for AlbumsPane {
     fn render(&mut self, frame: &mut Frame, area: Rect, focused: bool, app: &App, theme: &Theme) {
         let albums = app.library.get_albums();
+        let count = albums.len();
         let border_color = if focused {
             theme.border_focused
         } else {
@@ -35,14 +40,31 @@ impl Pane for AlbumsPane {
         let block = Block::default()
             .borders(Borders::ALL)
             .border_style(Style::default().fg(border_color))
-            .title(format!(" Albums ({}) ", albums.len()))
+            .title(format!(" Albums ({}) ", count))
             .title_style(Style::default().fg(if focused {
                 theme.border_focused
             } else {
                 theme.fg
             }));
 
-        let inner_height = block.inner(area).height as usize;
+        let inner = block.inner(area);
+        let inner_height = inner.height as usize;
+
+        // Auto-scroll
+        if count > 0 {
+            if self.selected < self.scroll_offset {
+                self.scroll_offset = self.selected;
+            }
+            if inner_height > 0 && self.selected >= self.scroll_offset + inner_height {
+                self.scroll_offset = self.selected - inner_height + 1;
+            }
+        }
+
+        let has_scrollbar = count > inner_height;
+        let highlight = Style::default()
+            .bg(theme.highlight_bg)
+            .fg(theme.highlight_fg)
+            .add_modifier(Modifier::BOLD);
 
         let items: Vec<ListItem> = albums
             .iter()
@@ -51,30 +73,38 @@ impl Pane for AlbumsPane {
             .take(inner_height)
             .map(|(i, (album, artist))| {
                 let is_selected = i == self.selected;
-                let style = if is_selected && focused {
-                    Style::default()
-                        .bg(theme.highlight_bg)
-                        .fg(theme.highlight_fg)
-                        .add_modifier(Modifier::BOLD)
-                } else {
-                    Style::default().fg(theme.fg)
-                };
+                let is_hovered = self.hover_row == Some(i);
 
-                let artist_style = if is_selected && focused {
-                    style
+                if is_selected && focused {
+                    ListItem::new(Line::from(vec![
+                        Span::styled(format!("  {}", album), highlight),
+                        Span::styled(format!("  {}", artist), highlight),
+                    ]))
                 } else {
-                    Style::default().fg(ratatui::style::Color::Gray)
-                };
-
-                ListItem::new(Line::from(vec![
-                    Span::styled(album.as_str(), style),
-                    Span::styled(format!(" - {}", artist), artist_style),
-                ]))
+                    let bg = if is_hovered { HOVER_BG } else { Color::Reset };
+                    ListItem::new(Line::from(vec![
+                        Span::styled(format!("  {}", album), Style::default().fg(theme.fg).bg(bg)),
+                        Span::styled(format!("  {}", artist), Style::default().fg(Color::Gray).bg(bg)),
+                    ]))
+                }
             })
             .collect();
 
         let list = List::new(items).block(block);
         frame.render_widget(list, area);
+
+        if has_scrollbar {
+            let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+                .begin_symbol(None)
+                .end_symbol(None);
+            let mut scrollbar_state = ScrollbarState::new(count)
+                .position(self.scroll_offset);
+            frame.render_stateful_widget(
+                scrollbar,
+                area.inner(ratatui::layout::Margin { vertical: 1, horizontal: 0 }),
+                &mut scrollbar_state,
+            );
+        }
     }
 
     fn handle_key(&mut self, key: KeyEvent, app: &App) -> Option<AppAction> {
@@ -104,6 +134,15 @@ impl Pane for AlbumsPane {
                         return Some(AppAction::AddToQueue(tracks));
                     }
                 }
+                None
+            }
+            KeyCode::Home | KeyCode::Char('g') => {
+                self.selected = 0;
+                self.scroll_offset = 0;
+                None
+            }
+            KeyCode::End | KeyCode::Char('G') => {
+                self.selected = count.saturating_sub(1);
                 None
             }
             _ => None,
@@ -142,8 +181,10 @@ impl Pane for AlbumsPane {
         }
         if up {
             self.scroll_offset = self.scroll_offset.saturating_sub(3);
+            self.selected = self.selected.saturating_sub(3);
         } else {
             self.scroll_offset = (self.scroll_offset + 3).min(count.saturating_sub(1));
+            self.selected = (self.selected + 3).min(count.saturating_sub(1));
         }
         None
     }

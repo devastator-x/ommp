@@ -19,11 +19,14 @@ enum LibraryEntry {
     Album { name: String, artist: String },
 }
 
+const HOVER_BG: Color = Color::Indexed(238);
+
 /// Library browser for the Queue tab.
 /// Shows 3 sections: Default Playlist, Directories, Albums.
 pub struct LibraryPane {
     pub selected: usize,
     pub scroll_offset: usize,
+    pub hover_row: Option<usize>,
 }
 
 impl LibraryPane {
@@ -31,6 +34,7 @@ impl LibraryPane {
         Self {
             selected: 0,
             scroll_offset: 0,
+            hover_row: None,
         }
     }
 
@@ -118,10 +122,16 @@ impl Pane for LibraryPane {
             .take(inner_height)
             .map(|(i, entry)| {
                 let is_selected = i == self.selected;
+                let is_hovered = self.hover_row == Some(i);
                 let highlight = Style::default()
                     .bg(theme.highlight_bg)
                     .fg(theme.highlight_fg)
                     .add_modifier(Modifier::BOLD);
+                let hover_bg = if is_hovered && !(is_selected && focused) {
+                    HOVER_BG
+                } else {
+                    Color::Reset
+                };
 
                 match entry {
                     LibraryEntry::SectionHeader(text) => {
@@ -131,6 +141,7 @@ impl Pane for LibraryPane {
                             Style::default()
                                 .fg(Color::Cyan)
                                 .add_modifier(Modifier::BOLD)
+                                .bg(hover_bg)
                         };
                         ListItem::new(Line::from(Span::styled(text.as_str(), style)))
                     }
@@ -140,17 +151,17 @@ impl Pane for LibraryPane {
                     LibraryEntry::AllTracks(track_count) => {
                         if is_selected && focused {
                             ListItem::new(Line::from(vec![
-                                Span::styled("  \u{266A} ", highlight), // ♪
+                                Span::styled("  \u{266A} ", highlight),
                                 Span::styled("All Tracks", highlight),
                                 Span::styled(format!(" ({})", track_count), highlight),
                             ]))
                         } else {
                             ListItem::new(Line::from(vec![
-                                Span::styled("  \u{266A} ", Style::default().fg(Color::Cyan)),
-                                Span::styled("All Tracks", Style::default().fg(theme.fg)),
+                                Span::styled("  \u{266A} ", Style::default().fg(Color::Cyan).bg(hover_bg)),
+                                Span::styled("All Tracks", Style::default().fg(theme.fg).bg(hover_bg)),
                                 Span::styled(
                                     format!(" ({})", track_count),
-                                    Style::default().fg(Color::DarkGray),
+                                    Style::default().fg(Color::DarkGray).bg(hover_bg),
                                 ),
                             ]))
                         }
@@ -158,13 +169,13 @@ impl Pane for LibraryPane {
                     LibraryEntry::FavoriteDir(name) => {
                         if is_selected && focused {
                             ListItem::new(Line::from(vec![
-                                Span::styled("  \u{25C6} ", highlight), // ◆
+                                Span::styled("  \u{25C6} ", highlight),
                                 Span::styled(format!("{}/", name), highlight),
                             ]))
                         } else {
                             ListItem::new(Line::from(vec![
-                                Span::styled("  \u{25C6} ", Style::default().fg(Color::Green)),
-                                Span::styled(format!("{}/", name), Style::default().fg(theme.fg)),
+                                Span::styled("  \u{25C6} ", Style::default().fg(Color::Green).bg(hover_bg)),
+                                Span::styled(format!("{}/", name), Style::default().fg(theme.fg).bg(hover_bg)),
                             ]))
                         }
                     }
@@ -182,7 +193,7 @@ impl Pane for LibraryPane {
 
                         if is_selected && focused {
                             let mut spans = vec![
-                                Span::styled("  \u{25CF} ", highlight), // ●
+                                Span::styled("  \u{25CF} ", highlight),
                                 Span::styled(album_display, highlight),
                             ];
                             if !artist_display.is_empty() {
@@ -196,14 +207,14 @@ impl Pane for LibraryPane {
                             let mut spans = vec![
                                 Span::styled(
                                     "  \u{25CF} ",
-                                    Style::default().fg(Color::Magenta),
+                                    Style::default().fg(Color::Magenta).bg(hover_bg),
                                 ),
-                                Span::styled(album_display, Style::default().fg(theme.fg)),
+                                Span::styled(album_display, Style::default().fg(theme.fg).bg(hover_bg)),
                             ];
                             if !artist_display.is_empty() {
                                 spans.push(Span::styled(
                                     format!("  {}", artist_display),
-                                    Style::default().fg(Color::Gray),
+                                    Style::default().fg(Color::Gray).bg(hover_bg),
                                 ));
                             }
                             ListItem::new(Line::from(spans))
@@ -353,8 +364,10 @@ impl Pane for LibraryPane {
         }
         if up {
             self.scroll_offset = self.scroll_offset.saturating_sub(3);
+            self.selected = self.selected.saturating_sub(3);
         } else {
             self.scroll_offset = (self.scroll_offset + 3).min(count.saturating_sub(1));
+            self.selected = (self.selected + 3).min(count.saturating_sub(1));
         }
         None
     }

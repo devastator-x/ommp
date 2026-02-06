@@ -37,6 +37,11 @@ pub struct Ui {
     pub playlists_pane: PlaylistsPane,
     pub search_pane: SearchPane,
     pub lyrics_pane: LyricsPane,
+    pub last_click: Option<(std::time::Instant, u16, u16)>,
+    /// Last known mouse position (column, row) for hover tracking
+    pub mouse_pos: Option<(u16, u16)>,
+    /// Tab index currently hovered by mouse
+    pub hovered_tab: Option<usize>,
 }
 
 impl Ui {
@@ -53,6 +58,9 @@ impl Ui {
             playlists_pane: PlaylistsPane::new(),
             search_pane: SearchPane::new(),
             lyrics_pane: LyricsPane::new(),
+            last_click: None,
+            mouse_pos: None,
+            hovered_tab: None,
         }
     }
 
@@ -63,7 +71,7 @@ impl Ui {
         status_bar::render_status_bar(frame, areas.status_bar, app, &self.theme);
 
         // Tab bar
-        tab_bar::render_tab_bar(frame, areas.tab_bar, app.tab, &self.theme);
+        tab_bar::render_tab_bar(frame, areas.tab_bar, app.tab, self.hovered_tab, &self.theme);
 
         // Left pane (varies by tab)
         let lib_focused = app.focus == FocusedPane::Library;

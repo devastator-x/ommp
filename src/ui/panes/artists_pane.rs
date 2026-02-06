@@ -1,17 +1,20 @@
 use crossterm::event::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use ratatui::layout::Rect;
-use ratatui::style::{Modifier, Style};
+use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, List, ListItem};
+use ratatui::widgets::{Block, Borders, List, ListItem, Scrollbar, ScrollbarOrientation, ScrollbarState};
 use ratatui::Frame;
 
 use crate::app::{App, AppAction};
 use crate::ui::pane::Pane;
 use crate::ui::theme::Theme;
 
+const HOVER_BG: Color = Color::Indexed(238);
+
 pub struct ArtistsPane {
     pub selected: usize,
     pub scroll_offset: usize,
+    pub hover_row: Option<usize>,
 }
 
 impl ArtistsPane {
@@ -19,6 +22,7 @@ impl ArtistsPane {
         Self {
             selected: 0,
             scroll_offset: 0,
+            hover_row: None,
         }
     }
 }
@@ -26,6 +30,7 @@ impl ArtistsPane {
 impl Pane for ArtistsPane {
     fn render(&mut self, frame: &mut Frame, area: Rect, focused: bool, app: &App, theme: &Theme) {
         let artists = app.library.get_artists();
+        let count = artists.len();
         let border_color = if focused {
             theme.border_focused
         } else {
@@ -35,14 +40,31 @@ impl Pane for ArtistsPane {
         let block = Block::default()
             .borders(Borders::ALL)
             .border_style(Style::default().fg(border_color))
-            .title(format!(" Artists ({}) ", artists.len()))
+            .title(format!(" Artists ({}) ", count))
             .title_style(Style::default().fg(if focused {
                 theme.border_focused
             } else {
                 theme.fg
             }));
 
-        let inner_height = block.inner(area).height as usize;
+        let inner = block.inner(area);
+        let inner_height = inner.height as usize;
+
+        // Auto-scroll
+        if count > 0 {
+            if self.selected < self.scroll_offset {
+                self.scroll_offset = self.selected;
+            }
+            if inner_height > 0 && self.selected >= self.scroll_offset + inner_height {
+                self.scroll_offset = self.selected - inner_height + 1;
+            }
+        }
+
+        let has_scrollbar = count > inner_height;
+        let highlight = Style::default()
+            .bg(theme.highlight_bg)
+            .fg(theme.highlight_fg)
+            .add_modifier(Modifier::BOLD);
 
         let items: Vec<ListItem> = artists
             .iter()
@@ -51,20 +73,33 @@ impl Pane for ArtistsPane {
             .take(inner_height)
             .map(|(i, artist)| {
                 let is_selected = i == self.selected;
+                let is_hovered = self.hover_row == Some(i);
                 let style = if is_selected && focused {
-                    Style::default()
-                        .bg(theme.highlight_bg)
-                        .fg(theme.highlight_fg)
-                        .add_modifier(Modifier::BOLD)
+                    highlight
+                } else if is_hovered {
+                    Style::default().fg(theme.fg).bg(HOVER_BG)
                 } else {
                     Style::default().fg(theme.fg)
                 };
-                ListItem::new(Line::from(Span::styled(artist.as_str(), style)))
+                ListItem::new(Line::from(Span::styled(format!("  {}", artist), style)))
             })
             .collect();
 
         let list = List::new(items).block(block);
         frame.render_widget(list, area);
+
+        if has_scrollbar {
+            let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+                .begin_symbol(None)
+                .end_symbol(None);
+            let mut scrollbar_state = ScrollbarState::new(count)
+                .position(self.scroll_offset);
+            frame.render_stateful_widget(
+                scrollbar,
+                area.inner(ratatui::layout::Margin { vertical: 1, horizontal: 0 }),
+                &mut scrollbar_state,
+            );
+        }
     }
 
     fn handle_key(&mut self, key: KeyEvent, app: &App) -> Option<AppAction> {
@@ -94,6 +129,15 @@ impl Pane for ArtistsPane {
                         return Some(AppAction::AddToQueue(tracks));
                     }
                 }
+                None
+            }
+            KeyCode::Home | KeyCode::Char('g') => {
+                self.selected = 0;
+                self.scroll_offset = 0;
+                None
+            }
+            KeyCode::End | KeyCode::Char('G') => {
+                self.selected = count.saturating_sub(1);
                 None
             }
             _ => None,
@@ -132,8 +176,10 @@ impl Pane for ArtistsPane {
         }
         if up {
             self.scroll_offset = self.scroll_offset.saturating_sub(3);
+            self.selected = self.selected.saturating_sub(3);
         } else {
             self.scroll_offset = (self.scroll_offset + 3).min(count.saturating_sub(1));
+            self.selected = (self.selected + 3).min(count.saturating_sub(1));
         }
         None
     }

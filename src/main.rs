@@ -4,7 +4,7 @@ mod event;
 mod library;
 mod ui;
 
-use std::io;
+use std::io::{self, Write};
 use std::path::PathBuf;
 use std::time::Duration;
 
@@ -29,6 +29,10 @@ fn main() -> Result<()> {
     enable_raw_mode()?;
     let mut stdout = io::stdout();
     execute!(stdout, EnterAlternateScreen, EnableMouseCapture)?;
+    // Explicitly enable mouse motion tracking (SGR any-event mode)
+    // Some terminals need this even after EnableMouseCapture
+    stdout.write_all(b"\x1b[?1003h")?;
+    stdout.flush()?;
     let backend = CrosstermBackend::new(stdout);
     let mut terminal = Terminal::new(backend)?;
 
@@ -36,8 +40,10 @@ fn main() -> Result<()> {
 
     // Restore terminal
     disable_raw_mode()?;
+    // Disable mouse motion tracking
     execute!(
         terminal.backend_mut(),
+        crossterm::style::Print("\x1b[?1003l"),
         LeaveAlternateScreen,
         DisableMouseCapture
     )?;
@@ -126,7 +132,10 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
                         vec![] // Will re-render on next loop
                     }
                     Event::Tick => {
-                        vec![] // Just re-render
+                        // Refresh hover + focus from stored mouse position
+                        let size = terminal.size()?;
+                        let area = ratatui::layout::Rect::new(0, 0, size.width, size.height);
+                        handler::refresh_hover(&app, &mut ui, area)
                     }
                     Event::Audio(audio_event) => {
                         match audio_event {

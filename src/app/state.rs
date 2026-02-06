@@ -23,9 +23,9 @@ impl RepeatMode {
 
     pub fn symbol(self) -> &'static str {
         match self {
-            RepeatMode::Off => "⇥",
-            RepeatMode::All => "🔁",
-            RepeatMode::One => "🔂",
+            RepeatMode::Off => "\u{21BB}",  // ↻
+            RepeatMode::All => "\u{21BB}",  // ↻
+            RepeatMode::One => "\u{21BB}1", // ↻1
         }
     }
 }

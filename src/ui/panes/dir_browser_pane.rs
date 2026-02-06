@@ -1,8 +1,8 @@
 use crossterm::event::{KeyCode, KeyEvent, MouseButton, MouseEvent, MouseEventKind};
 use ratatui::layout::Rect;
-use ratatui::style::{Modifier, Style};
+use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, List, ListItem};
+use ratatui::widgets::{Block, Borders, List, ListItem, Scrollbar, ScrollbarOrientation, ScrollbarState};
 use ratatui::Frame;
 use std::path::PathBuf;
 
@@ -10,11 +10,14 @@ use crate::app::{App, AppAction};
 use crate::ui::pane::Pane;
 use crate::ui::theme::Theme;
 
+const HOVER_BG: Color = Color::Indexed(238);
+
 pub struct DirBrowserPane {
     pub current_dir: PathBuf,
     pub entries: Vec<DirEntry>,
     pub selected: usize,
     pub scroll_offset: usize,
+    pub hover_row: Option<usize>,
 }
 
 #[derive(Debug, Clone)]
@@ -31,6 +34,7 @@ impl DirBrowserPane {
             entries: Vec::new(),
             selected: 0,
             scroll_offset: 0,
+            hover_row: None,
         }
     }
 
@@ -53,6 +57,7 @@ impl DirBrowserPane {
 
 impl Pane for DirBrowserPane {
     fn render(&mut self, frame: &mut Frame, area: Rect, focused: bool, app: &App, theme: &Theme) {
+        let count = self.entries.len();
         let border_color = if focused {
             theme.border_focused
         } else {
@@ -75,7 +80,24 @@ impl Pane for DirBrowserPane {
                 theme.fg
             }));
 
-        let inner_height = block.inner(area).height as usize;
+        let inner = block.inner(area);
+        let inner_height = inner.height as usize;
+
+        // Auto-scroll
+        if count > 0 {
+            if self.selected < self.scroll_offset {
+                self.scroll_offset = self.selected;
+            }
+            if inner_height > 0 && self.selected >= self.scroll_offset + inner_height {
+                self.scroll_offset = self.selected - inner_height + 1;
+            }
+        }
+
+        let has_scrollbar = count > inner_height;
+        let highlight = Style::default()
+            .bg(theme.highlight_bg)
+            .fg(theme.highlight_fg)
+            .add_modifier(Modifier::BOLD);
 
         let items: Vec<ListItem> = self
             .entries
@@ -85,30 +107,71 @@ impl Pane for DirBrowserPane {
             .take(inner_height)
             .map(|(i, entry)| {
                 let is_selected = i == self.selected;
-                let style = if is_selected && focused {
-                    Style::default()
-                        .bg(theme.highlight_bg)
-                        .fg(theme.highlight_fg)
-                        .add_modifier(Modifier::BOLD)
-                } else {
-                    Style::default().fg(theme.fg)
-                };
+                let is_hovered = self.hover_row == Some(i);
 
-                let text = match entry {
-                    DirEntry::ParentDir => "📁 ..".to_string(),
-                    DirEntry::Directory(name) => format!("📁 {}", name),
+                match entry {
+                    DirEntry::ParentDir => {
+                        if is_selected && focused {
+                            ListItem::new(Line::from(vec![
+                                Span::styled("  \u{25C6} ", highlight),
+                                Span::styled("..", highlight),
+                            ]))
+                        } else {
+                            let bg = if is_hovered { HOVER_BG } else { Color::Reset };
+                            ListItem::new(Line::from(vec![
+                                Span::styled("  \u{25C6} ", Style::default().fg(Color::Yellow).bg(bg)),
+                                Span::styled("..", Style::default().fg(theme.fg).bg(bg)),
+                            ]))
+                        }
+                    }
+                    DirEntry::Directory(name) => {
+                        if is_selected && focused {
+                            ListItem::new(Line::from(vec![
+                                Span::styled("  \u{25C6} ", highlight),
+                                Span::styled(format!("{}/", name), highlight),
+                            ]))
+                        } else {
+                            let bg = if is_hovered { HOVER_BG } else { Color::Reset };
+                            ListItem::new(Line::from(vec![
+                                Span::styled("  \u{25C6} ", Style::default().fg(Color::Green).bg(bg)),
+                                Span::styled(format!("{}/", name), Style::default().fg(theme.fg).bg(bg)),
+                            ]))
+                        }
+                    }
                     DirEntry::Track(idx) => {
                         let t = &app.library.tracks[*idx];
-                        format!("🎵 {}", t.title)
+                        if is_selected && focused {
+                            ListItem::new(Line::from(vec![
+                                Span::styled("  \u{266A} ", highlight),
+                                Span::styled(&t.title, highlight),
+                            ]))
+                        } else {
+                            let bg = if is_hovered { HOVER_BG } else { Color::Reset };
+                            ListItem::new(Line::from(vec![
+                                Span::styled("  \u{266A} ", Style::default().fg(Color::Cyan).bg(bg)),
+                                Span::styled(&t.title, Style::default().fg(theme.fg).bg(bg)),
+                            ]))
+                        }
                     }
-                };
-
-                ListItem::new(Line::from(Span::styled(text, style)))
+                }
             })
             .collect();
 
         let list = List::new(items).block(block);
         frame.render_widget(list, area);
+
+        if has_scrollbar {
+            let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+                .begin_symbol(None)
+                .end_symbol(None);
+            let mut scrollbar_state = ScrollbarState::new(count)
+                .position(self.scroll_offset);
+            frame.render_stateful_widget(
+                scrollbar,
+                area.inner(ratatui::layout::Margin { vertical: 1, horizontal: 0 }),
+                &mut scrollbar_state,
+            );
+        }
     }
 
     fn handle_key(&mut self, key: KeyEvent, app: &App) -> Option<AppAction> {
@@ -147,7 +210,6 @@ impl Pane for DirBrowserPane {
                         self.refresh(app);
                     }
                     DirEntry::Track(idx) => {
-                        // Add this track to queue and play it
                         return Some(AppAction::AddToQueue(vec![*idx]));
                     }
                 }
@@ -162,11 +224,20 @@ impl Pane for DirBrowserPane {
                 }
                 None
             }
+            KeyCode::Home | KeyCode::Char('g') => {
+                self.selected = 0;
+                self.scroll_offset = 0;
+                None
+            }
+            KeyCode::End | KeyCode::Char('G') => {
+                self.selected = count.saturating_sub(1);
+                None
+            }
             _ => None,
         }
     }
 
-    fn handle_mouse(&mut self, event: MouseEvent, area: Rect, app: &App) -> Option<AppAction> {
+    fn handle_mouse(&mut self, event: MouseEvent, area: Rect, _app: &App) -> Option<AppAction> {
         let block = Block::default().borders(Borders::ALL);
         let inner = block.inner(area);
         let count = self.entries.len();
@@ -185,9 +256,8 @@ impl Pane for DirBrowserPane {
                 }
                 None
             }
-            // Double-click not available in crossterm 0.28 - use single click + Enter
-            MouseEventKind::ScrollDown => self.handle_scroll(false, app),
-            MouseEventKind::ScrollUp => self.handle_scroll(true, app),
+            MouseEventKind::ScrollDown => self.handle_scroll(false, _app),
+            MouseEventKind::ScrollUp => self.handle_scroll(true, _app),
             _ => None,
         }
     }
@@ -199,8 +269,10 @@ impl Pane for DirBrowserPane {
         }
         if up {
             self.scroll_offset = self.scroll_offset.saturating_sub(3);
+            self.selected = self.selected.saturating_sub(3);
         } else {
             self.scroll_offset = (self.scroll_offset + 3).min(count.saturating_sub(1));
+            self.selected = (self.selected + 3).min(count.saturating_sub(1));
         }
         None
     }
