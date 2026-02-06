@@ -1,0 +1,16 @@
+[package]
+name = "ommp"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+ratatui = "0.29"
+crossterm = "0.28"
+rodio = { version = "0.21", features = ["symphonia-all"] }
+lofty = "0.21"
+walkdir = "2"
+crossbeam-channel = "0.5"
+anyhow = "1"
+rand = "0.8"
+unicode-width = "0.2"
+symphonia = { version = "0.5", features = ["all"] }
