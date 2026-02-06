@@ -8,12 +8,20 @@ use crate::app::App;
 use crate::app::state::PlayState;
 use crate::ui::theme::Theme;
 
-pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme) {
-    let block = Block::default()
-        .borders(Borders::ALL)
-        .border_style(Style::default().fg(theme.border_unfocused))
-        .title(" Status ")
-        .title_style(Style::default().fg(Color::White));
+pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme, resize_mode: bool) {
+    let block = if resize_mode {
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Yellow))
+            .title(" Status [RESIZE] ")
+            .title_style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))
+    } else {
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(theme.border_unfocused))
+            .title(" Status ")
+            .title_style(Style::default().fg(Color::White))
+    };
 
     let inner = block.inner(area);
     frame.render_widget(block, area);

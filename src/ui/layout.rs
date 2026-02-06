@@ -11,7 +11,7 @@ pub struct LayoutAreas {
 }
 
 impl LayoutAreas {
-    pub fn compute(area: Rect) -> Self {
+    pub fn compute(area: Rect, pane_widths: [u16; 3]) -> Self {
         let vertical = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
@@ -30,9 +30,9 @@ impl LayoutAreas {
         let columns = Layout::default()
             .direction(Direction::Horizontal)
             .constraints([
-                Constraint::Percentage(30), // Library
-                Constraint::Percentage(35), // Playlist
-                Constraint::Percentage(35), // Lyrics
+                Constraint::Percentage(pane_widths[0]),
+                Constraint::Percentage(pane_widths[1]),
+                Constraint::Percentage(pane_widths[2]),
             ])
             .split(dashboard);
 

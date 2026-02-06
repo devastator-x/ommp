@@ -19,6 +19,33 @@ pub fn handle_key_event(key: KeyEvent, app: &App, ui: &mut Ui) -> Vec<AppAction>
         return actions;
     }
 
+    // Resize mode toggle
+    if key.modifiers == KeyModifiers::CONTROL && key.code == KeyCode::Char('e') {
+        ui.resize_mode = !ui.resize_mode;
+        return actions;
+    }
+
+    // Resize mode key handling
+    if ui.resize_mode {
+        match key.code {
+            KeyCode::Char('h') | KeyCode::Left => {
+                resize_pane(ui, app.focus, -2);
+            }
+            KeyCode::Char('l') | KeyCode::Right => {
+                resize_pane(ui, app.focus, 2);
+            }
+            KeyCode::Esc | KeyCode::Enter => {
+                ui.resize_mode = false;
+            }
+            KeyCode::Char('q') => {
+                ui.resize_mode = false;
+                actions.push(AppAction::Quit);
+            }
+            _ => {}
+        }
+        return actions;
+    }
+
     // Global keybindings first
     match (key.modifiers, key.code) {
         (_, KeyCode::Char('q')) => {
@@ -161,7 +188,7 @@ pub fn handle_mouse_event(
     terminal_area: ratatui::layout::Rect,
 ) -> Vec<AppAction> {
     let mut actions = Vec::new();
-    let areas = LayoutAreas::compute(terminal_area);
+    let areas = LayoutAreas::compute(terminal_area, ui.pane_widths);
 
     let x = mouse.column;
     let y = mouse.row;
@@ -204,9 +231,70 @@ pub fn handle_mouse_event(
         actions.push(AppAction::FocusPane(FocusedPane::Lyrics));
     }
 
+    // --- Border drag resize ---
+    let border0_x = areas.library.x + areas.library.width; // lib|playlist boundary
+    let border1_x = areas.playlist.x + areas.playlist.width; // playlist|lyrics boundary
+    let in_dashboard_y = y >= areas.library.y && y < areas.library.y + areas.library.height;
+
+    // Handle active drag (before normal mouse processing)
+    if ui.dragging_border.is_some() {
+        match mouse.kind {
+            MouseEventKind::Drag(MouseButton::Left) | MouseEventKind::Moved => {
+                if let Some(border_idx) = ui.dragging_border {
+                    let dashboard_x = areas.library.x;
+                    let dashboard_w = areas.library.width + areas.playlist.width + areas.lyrics.width;
+                    if dashboard_w > 0 {
+                        let rel_x = x.saturating_sub(dashboard_x);
+                        let pct = ((rel_x as u32 * 100) / dashboard_w as u32) as u16;
+                        let min_w: u16 = 10;
+                        if border_idx == 0 {
+                            // Dragging lib|playlist border
+                            let new_lib = pct.clamp(min_w, 100 - min_w - ui.pane_widths[2]);
+                            let new_play = (100 - new_lib - ui.pane_widths[2]).max(min_w);
+                            let new_lib = 100 - new_play - ui.pane_widths[2];
+                            if new_lib >= min_w {
+                                ui.pane_widths[0] = new_lib;
+                                ui.pane_widths[1] = new_play;
+                            }
+                        } else {
+                            // Dragging playlist|lyrics border
+                            let new_right = (100u16.saturating_sub(pct)).max(min_w);
+                            let new_play = (100 - ui.pane_widths[0] - new_right).max(min_w);
+                            let new_right = 100 - ui.pane_widths[0] - new_play;
+                            if new_right >= min_w {
+                                ui.pane_widths[1] = new_play;
+                                ui.pane_widths[2] = new_right;
+                            }
+                        }
+                    }
+                }
+                return actions;
+            }
+            MouseEventKind::Up(MouseButton::Left) => {
+                ui.dragging_border = None;
+                return actions;
+            }
+            _ => {
+                ui.dragging_border = None;
+            }
+        }
+    }
+
     // --- Handle specific event kinds ---
     match mouse.kind {
         MouseEventKind::Down(MouseButton::Left) => {
+            // Border drag start detection
+            if in_dashboard_y {
+                if x.abs_diff(border0_x) <= 1 {
+                    ui.dragging_border = Some(0);
+                    return actions;
+                }
+                if x.abs_diff(border1_x) <= 1 {
+                    ui.dragging_border = Some(1);
+                    return actions;
+                }
+            }
+
             // Double-click detection
             let is_double_click = if let Some((last_time, _last_col, last_row)) = ui.last_click {
                 last_time.elapsed() < Duration::from_millis(400) && last_row == y
@@ -425,7 +513,7 @@ fn update_hover(
 pub fn refresh_hover(app: &App, ui: &mut Ui, terminal_area: ratatui::layout::Rect) -> Vec<AppAction> {
     let mut actions = Vec::new();
     if let Some((x, y)) = ui.mouse_pos {
-        let areas = LayoutAreas::compute(terminal_area);
+        let areas = LayoutAreas::compute(terminal_area, ui.pane_widths);
         let in_library = x >= areas.library.x
             && x < areas.library.x + areas.library.width
             && y >= areas.library.y
@@ -457,6 +545,47 @@ pub fn refresh_hover(app: &App, ui: &mut Ui, terminal_area: ratatui::layout::Rec
         }
     }
     actions
+}
+
+/// Resize the focused pane by delta percentage points.
+/// Positive delta = grow the focused pane rightward, negative = shrink rightward.
+fn resize_pane(ui: &mut Ui, focus: FocusedPane, delta: i16) {
+    let min_width: u16 = 10;
+    let w = &mut ui.pane_widths;
+
+    match focus {
+        FocusedPane::Library => {
+            let new_lib = (w[0] as i16 + delta).clamp(min_width as i16, 80) as u16;
+            let diff = new_lib as i16 - w[0] as i16;
+            let new_play = (w[1] as i16 - diff).max(min_width as i16) as u16;
+            let actual_diff = w[1] as i16 - new_play as i16;
+            w[0] = (w[0] as i16 + actual_diff) as u16;
+            w[1] = new_play;
+        }
+        FocusedPane::Playlist => {
+            if delta < 0 {
+                let shrink = (-delta) as u16;
+                if w[1] > min_width + shrink - 1 {
+                    w[1] -= shrink;
+                    w[0] += shrink;
+                }
+            } else {
+                let grow = delta as u16;
+                if w[2] > min_width + grow - 1 {
+                    w[2] -= grow;
+                    w[1] += grow;
+                }
+            }
+        }
+        FocusedPane::Lyrics => {
+            let new_lyr = (w[2] as i16 - delta).clamp(min_width as i16, 80) as u16;
+            let diff = w[2] as i16 - new_lyr as i16;
+            let new_play = (w[1] as i16 + diff).max(min_width as i16) as u16;
+            let actual_diff = new_play as i16 - w[1] as i16;
+            w[2] = (w[2] as i16 - actual_diff) as u16;
+            w[1] = new_play;
+        }
+    }
 }
 
 /// Update queue selection based on keyboard in playlist focus

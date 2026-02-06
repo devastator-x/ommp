@@ -5,6 +5,8 @@ pub mod theme;
 pub mod widgets;
 
 use ratatui::Frame;
+use ratatui::style::{Color, Style};
+use ratatui::widgets::{Block, Borders};
 
 use crate::app::App;
 use crate::app::state::{FocusedPane, Tab};
@@ -42,6 +44,12 @@ pub struct Ui {
     pub mouse_pos: Option<(u16, u16)>,
     /// Tab index currently hovered by mouse
     pub hovered_tab: Option<usize>,
+    /// Pane width percentages [Library, Playlist, Lyrics], sum = 100
+    pub pane_widths: [u16; 3],
+    /// Resize mode active (Ctrl+E)
+    pub resize_mode: bool,
+    /// Border being dragged: 0 = lib|playlist, 1 = playlist|lyrics, None = not dragging
+    pub dragging_border: Option<u8>,
 }
 
 impl Ui {
@@ -61,14 +69,17 @@ impl Ui {
             last_click: None,
             mouse_pos: None,
             hovered_tab: None,
+            pane_widths: [30, 35, 35],
+            resize_mode: false,
+            dragging_border: None,
         }
     }
 
     pub fn render(&mut self, frame: &mut Frame, app: &App) {
-        let areas = LayoutAreas::compute(frame.area());
+        let areas = LayoutAreas::compute(frame.area(), self.pane_widths);
 
         // Status bar
-        status_bar::render_status_bar(frame, areas.status_bar, app, &self.theme);
+        status_bar::render_status_bar(frame, areas.status_bar, app, &self.theme, self.resize_mode);
 
         // Tab bar
         tab_bar::render_tab_bar(frame, areas.tab_bar, app.tab, self.hovered_tab, &self.theme);
@@ -96,6 +107,19 @@ impl Ui {
 
         // Progress bar
         progress_bar::render_progress_bar(frame, areas.progress_bar, app, &self.theme);
+
+        // Resize mode: overlay yellow border on focused pane
+        if self.resize_mode {
+            let focused_area = match app.focus {
+                FocusedPane::Library => areas.library,
+                FocusedPane::Playlist => areas.playlist,
+                FocusedPane::Lyrics => areas.lyrics,
+            };
+            let overlay = Block::default()
+                .borders(Borders::ALL)
+                .border_style(Style::default().fg(Color::Yellow));
+            frame.render_widget(overlay, focused_area);
+        }
     }
 
     pub fn refresh_dir_browser(&mut self, app: &App) {
