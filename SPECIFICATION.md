@@ -124,7 +124,22 @@ src/
 ### Layout Computation (LayoutAreas)
 
 - **Vertical**: StatusBar(4) | TabBar(3) | Dashboard(Min 10) | ProgressBar(3)
-- **Dashboard Horizontal**: Library(30%) | Playlist(35%) | Lyrics(35%)
+- **Dashboard Horizontal**: Library(30%) | Playlist(35%) | Lyrics(35%) — 기본값, 리사이즈 가능
+- `LayoutAreas::compute(area, pane_widths: [u16; 3])` — 동적 너비 퍼센트 수용
+
+### Pane Resize (tmux-style)
+
+Pane 크기를 키보드 또는 마우스 드래그로 조절할 수 있습니다.
+
+- **Ui 필드**: `pane_widths: [u16; 3]` (기본 `[30, 35, 35]`), `resize_mode: bool`, `dragging_border: Option<u8>`
+- **키보드**: `Ctrl+E`로 resize 모드 토글 → `h`/`l`/`←`/`→`로 포커스된 Pane 2% 단위 조절
+  - `Esc`/`Enter`: resize 모드 해제
+  - `q`: resize 모드 해제 + 앱 종료
+- **마우스**: Pane 경계선(±1px) 클릭 후 드래그로 연속 리사이즈
+  - Border 0: Library|Playlist 경계
+  - Border 1: Playlist|Lyrics 경계
+- **최소 너비**: 각 Pane 10% 이하로 줄어들지 않음
+- **시각 표시**: resize 모드 시 포커스된 Pane에 Yellow 테두리 오버레이, Status Bar 제목에 `[RESIZE]` 표시
 
 ### Tab-to-Pane Mapping
 
@@ -185,6 +200,9 @@ pub trait Pane {
 | `d` | Remove selected from queue |
 | `/` or `i` | Enter search mode (Search tab) |
 | `Esc` | Exit search mode |
+| `Ctrl+E` | Toggle resize mode |
+| `h`/`l`/`←`/`→` (resize mode) | Resize focused pane ±2% |
+| `Esc`/`Enter` (resize mode) | Exit resize mode |
 
 ## Mouse Support
 
@@ -199,6 +217,7 @@ pub trait Pane {
 | Click on tab | Switch to that tab |
 | Click on progress bar | Seek to position |
 | Scroll wheel | Scroll list (3 items per tick) |
+| Drag pane border | Resize panes dynamically (min 10%) |
 
 ### Hover System
 
