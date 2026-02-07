@@ -7,7 +7,7 @@ pub mod widgets;
 use ratatui::Frame;
 use ratatui::style::{Color, Style};
 use ratatui::widgets::{Block, Borders};
-use widgets::{help_modal, playlist_modal, search_modal};
+use widgets::{about_modal, help_modal, playlist_modal, search_modal};
 use widgets::playlist_modal::PlaylistModalMode;
 
 use crate::app::App;
@@ -70,6 +70,8 @@ pub struct Ui {
     pub playlist_modal_mode: PlaylistModalMode,
     /// Playlist modal text input (for create/rename)
     pub playlist_modal_input: String,
+    /// About modal visible
+    pub show_about_modal: bool,
 }
 
 impl Ui {
@@ -101,6 +103,7 @@ impl Ui {
             playlist_modal_selected: 0,
             playlist_modal_mode: PlaylistModalMode::List,
             playlist_modal_input: String::new(),
+            show_about_modal: false,
         }
     }
 
@@ -164,6 +167,10 @@ impl Ui {
 
         if self.show_help_modal {
             help_modal::render_help_modal(frame, frame.area(), &self.theme);
+        }
+
+        if self.show_about_modal {
+            about_modal::render_about_modal(frame, frame.area(), &self.theme);
         }
 
         if self.show_playlist_modal {

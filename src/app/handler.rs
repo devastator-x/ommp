@@ -12,6 +12,14 @@ use crate::ui::Ui;
 pub fn handle_key_event(key: KeyEvent, app: &App, ui: &mut Ui) -> Vec<AppAction> {
     let mut actions = Vec::new();
 
+    // About modal: Esc to close
+    if ui.show_about_modal {
+        if matches!(key.code, KeyCode::Esc | KeyCode::Char('q')) {
+            ui.show_about_modal = false;
+        }
+        return actions;
+    }
+
     // Help modal: Esc to close
     if ui.show_help_modal {
         if matches!(key.code, KeyCode::Esc | KeyCode::Char('q')) {
@@ -190,6 +198,9 @@ pub fn handle_key_event(key: KeyEvent, app: &App, ui: &mut Ui) -> Vec<AppAction>
             }
             KeyCode::Char('r') => {
                 ui.resize_mode = !ui.resize_mode;
+            }
+            KeyCode::Char('i') => {
+                ui.show_about_modal = true;
             }
             _ => {} // unknown chord, ignore
         }

@@ -10,6 +10,7 @@ const KEYBINDINGS: &[(&str, &str)] = &[
     ("Ctrl+E, s", "Search"),
     ("Ctrl+E, h", "Help (this modal)"),
     ("Ctrl+E, r", "Resize mode"),
+    ("Ctrl+E, i", "About OMMP"),
     ("", ""),
     ("Space", "Play / Pause"),
     ("n / N", "Next / Previous track"),
