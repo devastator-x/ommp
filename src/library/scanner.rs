@@ -11,7 +11,7 @@ use walkdir::WalkDir;
 
 use super::track::Track;
 
-const AUDIO_EXTENSIONS: &[&str] = &["flac", "mp3", "m4a", "mp4", "ogg", "wav"];
+const AUDIO_EXTENSIONS: &[&str] = &["flac", "mp3", "m4a", "ogg", "wav", "opus", "aac", "wma"];
 
 /// Check if we can decode this file: try rodio first, then symphonia direct probe
 fn is_decodable(path: &Path) -> bool {

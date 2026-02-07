@@ -167,3 +167,11 @@ impl Playlist {
         }
     }
 }
+
+#[derive(Debug, Clone)]
+pub enum LyricsStatus {
+    None,
+    Loading,
+    Found(String),
+    NotFound,
+}

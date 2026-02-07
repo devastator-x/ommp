@@ -2,6 +2,7 @@ mod app;
 mod audio;
 mod event;
 mod library;
+mod lyrics;
 mod ui;
 
 use std::io::{self, Write};
@@ -19,7 +20,7 @@ use ratatui::Terminal;
 
 use app::handler;
 use app::persist;
-use app::state::{FocusedPane, RepeatMode};
+use app::state::{FocusedPane, LyricsStatus, RepeatMode};
 use app::App;
 use audio::AudioEngine;
 use event::input;
@@ -202,10 +203,37 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
                             }
                         }
                     }
+                    Event::Lyrics(result) => {
+                        vec![app::AppAction::SetLyrics(result)]
+                    }
                 };
 
                 for action in actions {
                     app.handle_action(action);
+                }
+
+                // App sets track_just_changed wherever PlayerCommand::Play is sent
+                if app.track_just_changed {
+                    app.track_just_changed = false;
+                    if let Some(track) = app.current_track() {
+                        if let Some(ref embedded) = track.lyrics {
+                            app.lyrics_status = LyricsStatus::Found(embedded.clone());
+                        } else {
+                            let artist = track.artist.clone();
+                            let title = track.title.clone();
+                            let album = track.album.clone();
+                            let dur = track.duration.as_secs_f64();
+                            let idx = app.queue.current_index.unwrap_or(0);
+                            if !title.is_empty() {
+                                app.lyrics_status = LyricsStatus::Loading;
+                                lyrics::spawn_fetch(
+                                    event_tx.clone(), artist, title, album, dur, idx,
+                                );
+                            } else {
+                                app.lyrics_status = LyricsStatus::NotFound;
+                            }
+                        }
+                    }
                 }
 
                 if app.should_quit {

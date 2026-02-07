@@ -43,6 +43,7 @@ pub enum AppAction {
     CreatePlaylist(String),
     DeletePlaylist(usize),
     RenamePlaylist { idx: usize, name: String },
+    SetLyrics(crate::lyrics::LyricsResult),
 }
 
 pub struct App {
@@ -57,6 +58,8 @@ pub struct App {
     pub search_mode: bool,
     pub search_results: Vec<usize>,
     pub playlists: Vec<state::Playlist>,
+    pub lyrics_status: state::LyricsStatus,
+    pub track_just_changed: bool,
     audio_engine: Option<AudioEngine>,
 }
 
@@ -74,6 +77,8 @@ impl App {
             search_mode: false,
             search_results: Vec::new(),
             playlists: vec![state::Playlist::new("Bookmarks")],
+            lyrics_status: state::LyricsStatus::None,
+            track_just_changed: false,
             audio_engine: None,
         }
     }
@@ -100,6 +105,7 @@ impl App {
                     self.playback.state = PlayState::Playing;
                     self.playback.position_secs = 0.0;
                     self.playback.duration_secs = dur;
+                    self.track_just_changed = true;
                 }
             }
             AppAction::PauseResume => match self.playback.state {
@@ -266,6 +272,17 @@ impl App {
                     pl.name = name;
                 }
             }
+            AppAction::SetLyrics(result) => {
+                use crate::lyrics::LyricsResult;
+                match result {
+                    LyricsResult::Found { lyrics, .. } => {
+                        self.lyrics_status = state::LyricsStatus::Found(lyrics);
+                    }
+                    LyricsResult::NotFound { .. } | LyricsResult::Error { .. } => {
+                        self.lyrics_status = state::LyricsStatus::NotFound;
+                    }
+                }
+            }
         }
     }
 
@@ -286,6 +303,7 @@ impl App {
                     self.playback.state = PlayState::Playing;
                     self.playback.position_secs = 0.0;
                     self.playback.duration_secs = dur;
+                    self.track_just_changed = true;
                 }
             }
             _ => {
@@ -317,6 +335,7 @@ impl App {
                     self.playback.state = PlayState::Playing;
                     self.playback.position_secs = 0.0;
                     self.playback.duration_secs = dur;
+                    self.track_just_changed = true;
                 } else {
                     self.playback.state = PlayState::Stopped;
                     self.playback.position_secs = 0.0;
@@ -341,6 +360,7 @@ impl App {
                 }
                 self.playback.position_secs = 0.0;
                 self.playback.duration_secs = dur;
+                self.track_just_changed = true;
                 return;
             }
         }
@@ -368,6 +388,7 @@ impl App {
             self.playback.state = PlayState::Playing;
             self.playback.position_secs = 0.0;
             self.playback.duration_secs = dur;
+            self.track_just_changed = true;
         }
     }
 

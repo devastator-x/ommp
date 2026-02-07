@@ -36,10 +36,13 @@ impl Pane for LyricsPane {
                 theme.fg
             }));
 
-        let lyrics_text = app
-            .current_track()
-            .and_then(|t| t.lyrics.as_deref())
-            .unwrap_or("No lyrics available");
+        use crate::app::state::LyricsStatus;
+        let lyrics_text = match &app.lyrics_status {
+            LyricsStatus::None => "No lyrics available",
+            LyricsStatus::Loading => "Fetching lyrics...",
+            LyricsStatus::Found(text) => text.as_str(),
+            LyricsStatus::NotFound => "No lyrics found",
+        };
 
         let paragraph = Paragraph::new(lyrics_text)
             .block(block)
