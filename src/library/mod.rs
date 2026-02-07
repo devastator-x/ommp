@@ -131,6 +131,10 @@ impl Library {
         (subdirs.into_iter().collect(), tracks)
     }
 
+    pub fn path_to_index(&self, path: &Path) -> Option<usize> {
+        self.tracks.iter().position(|t| t.path == path)
+    }
+
     pub fn search(&self, query: &str) -> Vec<usize> {
         if query.is_empty() {
             return Vec::new();

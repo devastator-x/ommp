@@ -7,6 +7,8 @@ pub mod widgets;
 use ratatui::Frame;
 use ratatui::style::{Color, Style};
 use ratatui::widgets::{Block, Borders};
+use widgets::{help_modal, playlist_modal, search_modal};
+use widgets::playlist_modal::PlaylistModalMode;
 
 use crate::app::App;
 use crate::app::state::{FocusedPane, Tab};
@@ -50,6 +52,28 @@ pub struct Ui {
     pub resize_mode: bool,
     /// Border being dragged: 0 = lib|playlist, 1 = playlist|lyrics, None = not dragging
     pub dragging_border: Option<u8>,
+    /// Ctrl+E pressed, waiting for next key
+    pub chord_pending: bool,
+    /// Help modal visible
+    pub show_help_modal: bool,
+    /// Search modal visible
+    pub show_search_modal: bool,
+    /// Search modal input text
+    pub search_modal_input: String,
+    /// Search modal filtered results (track indices)
+    pub search_modal_results: Vec<usize>,
+    /// Search modal selected result index
+    pub search_modal_selected: usize,
+    /// Search modal scroll offset
+    pub search_modal_scroll: usize,
+    /// Playlist modal visible ("b" key)
+    pub show_playlist_modal: bool,
+    /// Playlist modal selected index
+    pub playlist_modal_selected: usize,
+    /// Playlist modal mode (List / Create / Rename)
+    pub playlist_modal_mode: PlaylistModalMode,
+    /// Playlist modal text input (for create/rename)
+    pub playlist_modal_input: String,
 }
 
 impl Ui {
@@ -72,6 +96,17 @@ impl Ui {
             pane_widths: [20, 60, 20],
             resize_mode: false,
             dragging_border: None,
+            chord_pending: false,
+            show_help_modal: false,
+            show_search_modal: false,
+            search_modal_input: String::new(),
+            search_modal_results: Vec::new(),
+            search_modal_selected: 0,
+            search_modal_scroll: 0,
+            show_playlist_modal: false,
+            playlist_modal_selected: 0,
+            playlist_modal_mode: PlaylistModalMode::List,
+            playlist_modal_input: String::new(),
         }
     }
 
@@ -119,6 +154,36 @@ impl Ui {
                 .borders(Borders::ALL)
                 .border_style(Style::default().fg(Color::Yellow));
             frame.render_widget(overlay, focused_area);
+        }
+
+        // Modal overlays (rendered last, on top of everything)
+        if self.show_search_modal {
+            search_modal::render_search_modal(
+                frame,
+                frame.area(),
+                &self.search_modal_input,
+                &self.search_modal_results,
+                self.search_modal_selected,
+                self.search_modal_scroll,
+                app,
+                &self.theme,
+            );
+        }
+
+        if self.show_help_modal {
+            help_modal::render_help_modal(frame, frame.area(), &self.theme);
+        }
+
+        if self.show_playlist_modal {
+            playlist_modal::render_playlist_modal(
+                frame,
+                frame.area(),
+                self.playlist_modal_selected,
+                &self.playlist_modal_mode,
+                &self.playlist_modal_input,
+                app,
+                &self.theme,
+            );
         }
     }
 

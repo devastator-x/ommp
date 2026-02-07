@@ -6,10 +6,172 @@ use crate::app::{App, AppAction};
 use crate::ui::layout::LayoutAreas;
 use crate::ui::pane::Pane;
 use crate::ui::widgets::{progress_bar, tab_bar};
+use crate::ui::widgets::playlist_modal::PlaylistModalMode;
 use crate::ui::Ui;
 
 pub fn handle_key_event(key: KeyEvent, app: &App, ui: &mut Ui) -> Vec<AppAction> {
     let mut actions = Vec::new();
+
+    // Help modal: Esc to close
+    if ui.show_help_modal {
+        if matches!(key.code, KeyCode::Esc | KeyCode::Char('q')) {
+            ui.show_help_modal = false;
+        }
+        return actions;
+    }
+
+    // Playlist modal ("b" key) — list, create, rename modes
+    if ui.show_playlist_modal {
+        match ui.playlist_modal_mode {
+            PlaylistModalMode::Create | PlaylistModalMode::Rename => {
+                match key.code {
+                    KeyCode::Esc => {
+                        ui.playlist_modal_mode = PlaylistModalMode::List;
+                        ui.playlist_modal_input.clear();
+                    }
+                    KeyCode::Enter => {
+                        let name = ui.playlist_modal_input.trim().to_string();
+                        if !name.is_empty() {
+                            if ui.playlist_modal_mode == PlaylistModalMode::Create {
+                                actions.push(AppAction::CreatePlaylist(name));
+                            } else {
+                                actions.push(AppAction::RenamePlaylist {
+                                    idx: ui.playlist_modal_selected,
+                                    name,
+                                });
+                            }
+                        }
+                        ui.playlist_modal_mode = PlaylistModalMode::List;
+                        ui.playlist_modal_input.clear();
+                    }
+                    KeyCode::Backspace => {
+                        ui.playlist_modal_input.pop();
+                    }
+                    KeyCode::Char(c) => {
+                        ui.playlist_modal_input.push(c);
+                    }
+                    _ => {}
+                }
+            }
+            PlaylistModalMode::List => {
+                match key.code {
+                    KeyCode::Esc => {
+                        ui.show_playlist_modal = false;
+                        ui.playlist_modal_selected = 0;
+                    }
+                    KeyCode::Up | KeyCode::Char('k') => {
+                        if ui.playlist_modal_selected > 0 {
+                            ui.playlist_modal_selected -= 1;
+                        }
+                    }
+                    KeyCode::Down | KeyCode::Char('j') => {
+                        if !app.playlists.is_empty()
+                            && ui.playlist_modal_selected < app.playlists.len() - 1
+                        {
+                            ui.playlist_modal_selected += 1;
+                        }
+                    }
+                    KeyCode::Enter => {
+                        // Toggle track in selected playlist
+                        if let Some(track_idx) = app.queue.current_index
+                            .and_then(|qi| app.queue.tracks.get(qi).copied())
+                        {
+                            let pl_idx = ui.playlist_modal_selected;
+                            if pl_idx < app.playlists.len() {
+                                if app.playlists[pl_idx].tracks.contains(&track_idx) {
+                                    actions.push(AppAction::RemoveFromPlaylist {
+                                        playlist_idx: pl_idx,
+                                        track_idx,
+                                    });
+                                } else {
+                                    actions.push(AppAction::AddToPlaylist {
+                                        playlist_idx: pl_idx,
+                                        track_idx,
+                                    });
+                                }
+                            }
+                        }
+                    }
+                    KeyCode::Char('a') => {
+                        ui.playlist_modal_mode = PlaylistModalMode::Create;
+                        ui.playlist_modal_input.clear();
+                    }
+                    KeyCode::Char('d') => {
+                        if !app.playlists.is_empty() {
+                            actions.push(AppAction::DeletePlaylist(ui.playlist_modal_selected));
+                            if ui.playlist_modal_selected > 0
+                                && ui.playlist_modal_selected >= app.playlists.len() - 1
+                            {
+                                ui.playlist_modal_selected -= 1;
+                            }
+                        }
+                    }
+                    KeyCode::Char('r') => {
+                        if !app.playlists.is_empty() {
+                            ui.playlist_modal_mode = PlaylistModalMode::Rename;
+                            ui.playlist_modal_input =
+                                app.playlists[ui.playlist_modal_selected].name.clone();
+                        }
+                    }
+                    _ => {}
+                }
+            }
+        }
+        return actions;
+    }
+
+    // Search modal: input handling
+    if ui.show_search_modal {
+        match key.code {
+            KeyCode::Esc => {
+                ui.show_search_modal = false;
+                ui.search_modal_input.clear();
+                ui.search_modal_results.clear();
+                ui.search_modal_selected = 0;
+                ui.search_modal_scroll = 0;
+            }
+            KeyCode::Enter => {
+                if !ui.search_modal_results.is_empty() {
+                    let track_idx = ui.search_modal_results[ui.search_modal_selected];
+                    actions.push(AppAction::AddToQueue(vec![track_idx]));
+                    ui.show_search_modal = false;
+                    ui.search_modal_input.clear();
+                    ui.search_modal_results.clear();
+                    ui.search_modal_selected = 0;
+                    ui.search_modal_scroll = 0;
+                }
+            }
+            KeyCode::Up | KeyCode::BackTab => {
+                if ui.search_modal_selected > 0 {
+                    ui.search_modal_selected -= 1;
+                    if ui.search_modal_selected < ui.search_modal_scroll {
+                        ui.search_modal_scroll = ui.search_modal_selected;
+                    }
+                }
+            }
+            KeyCode::Down | KeyCode::Tab => {
+                if !ui.search_modal_results.is_empty()
+                    && ui.search_modal_selected < ui.search_modal_results.len() - 1
+                {
+                    ui.search_modal_selected += 1;
+                }
+            }
+            KeyCode::Backspace => {
+                ui.search_modal_input.pop();
+                ui.search_modal_results = app.library.search(&ui.search_modal_input);
+                ui.search_modal_selected = 0;
+                ui.search_modal_scroll = 0;
+            }
+            KeyCode::Char(c) => {
+                ui.search_modal_input.push(c);
+                ui.search_modal_results = app.library.search(&ui.search_modal_input);
+                ui.search_modal_selected = 0;
+                ui.search_modal_scroll = 0;
+            }
+            _ => {}
+        }
+        return actions;
+    }
 
     // In search input mode, route everything to search pane
     if app.search_mode {
@@ -19,9 +181,32 @@ pub fn handle_key_event(key: KeyEvent, app: &App, ui: &mut Ui) -> Vec<AppAction>
         return actions;
     }
 
-    // Resize mode toggle
+    // Chord: Ctrl+E pressed, waiting for next key
+    if ui.chord_pending {
+        ui.chord_pending = false;
+        match key.code {
+            KeyCode::Char('s') => {
+                ui.show_search_modal = true;
+            }
+            KeyCode::Char('h') => {
+                ui.show_help_modal = true;
+            }
+            KeyCode::Char('r') => {
+                ui.resize_mode = !ui.resize_mode;
+            }
+            KeyCode::Char('p') => {
+                ui.show_playlist_modal = true;
+                ui.playlist_modal_selected = 0;
+                ui.playlist_modal_mode = PlaylistModalMode::List;
+            }
+            _ => {} // unknown chord, ignore
+        }
+        return actions;
+    }
+
+    // Ctrl+E → chord pending
     if key.modifiers == KeyModifiers::CONTROL && key.code == KeyCode::Char('e') {
-        ui.resize_mode = !ui.resize_mode;
+        ui.chord_pending = true;
         return actions;
     }
 
@@ -90,6 +275,14 @@ pub fn handle_key_event(key: KeyEvent, app: &App, ui: &mut Ui) -> Vec<AppAction>
         }
         (_, KeyCode::Char('r')) => {
             actions.push(AppAction::CycleRepeat);
+            return actions;
+        }
+        (_, KeyCode::Char('b')) => {
+            // Only open if a track is playing
+            if app.queue.current_index.is_some() {
+                ui.show_playlist_modal = true;
+                ui.playlist_modal_selected = 0;
+            }
             return actions;
         }
         (_, KeyCode::Tab) => {

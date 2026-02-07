@@ -18,7 +18,8 @@ use ratatui::backend::CrosstermBackend;
 use ratatui::Terminal;
 
 use app::handler;
-use app::state::FocusedPane;
+use app::persist;
+use app::state::{FocusedPane, RepeatMode};
 use app::App;
 use audio::AudioEngine;
 use event::input;
@@ -104,6 +105,31 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
                                 let all_indices: Vec<usize> = (0..app.library.tracks.len()).collect();
                                 app.handle_action(app::AppAction::AddToQueue(all_indices));
                                 ui.refresh_dir_browser(&app);
+
+                                // Restore persisted state
+                                if let Some(saved) = persist::load() {
+                                    app.playback.volume = saved.volume.clamp(0.0, 1.0);
+                                    app.playback.shuffle = saved.shuffle;
+                                    app.playback.repeat = RepeatMode::from_label(&saved.repeat);
+                                    app.handle_action(app::AppAction::SetVolume(app.playback.volume));
+                                    ui.pane_widths = saved.pane_widths;
+                                    // Restore playlists (path → index remapping)
+                                    let mut playlists = Vec::new();
+                                    for sp in &saved.playlists {
+                                        let tracks: Vec<usize> = sp.tracks.iter()
+                                            .filter_map(|p| app.library.path_to_index(p))
+                                            .collect();
+                                        playlists.push(app::state::Playlist {
+                                            name: sp.name.clone(),
+                                            tracks,
+                                        });
+                                    }
+                                    if playlists.is_empty() {
+                                        playlists.push(app::state::Playlist::new("Bookmarks"));
+                                    }
+                                    app.playlists = playlists;
+                                }
+
                                 scan_done = true;
                             }
                             Err(_) => {
@@ -121,7 +147,15 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
                 let actions = match event {
                     Event::Key(key) => {
                         // Handle queue selection directly for playlist focus
-                        if app.focus == FocusedPane::Playlist && !app.search_mode {
+                        // Skip when any modal is open
+                        if app.focus == FocusedPane::Playlist
+                            && !app.search_mode
+                            && !ui.show_search_modal
+                            && !ui.show_help_modal
+                            && !ui.show_playlist_modal
+                            && !ui.resize_mode
+                            && !ui.chord_pending
+                        {
                             handler::update_queue_selection(&mut app, key);
                         }
                         handler::handle_key_event(key, &app, &mut ui)
@@ -190,6 +224,28 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
         terminal.draw(|frame| {
             ui.render(frame, &app);
         })?;
+    }
+
+    // Save state on exit
+    let saved_playlists: Vec<persist::SavedPlaylist> = app.playlists.iter().map(|pl| {
+        persist::SavedPlaylist {
+            name: pl.name.clone(),
+            tracks: pl.tracks.iter()
+                .filter_map(|&idx| app.library.tracks.get(idx).map(|t| t.path.clone()))
+                .collect(),
+        }
+    }).collect();
+
+    let saved = persist::SavedState {
+        volume: app.playback.volume,
+        shuffle: app.playback.shuffle,
+        repeat: app.playback.repeat.as_str().to_string(),
+        pane_widths: ui.pane_widths,
+        playlists: saved_playlists,
+    };
+
+    if let Err(e) = persist::save(&saved) {
+        eprintln!("Warning: failed to save state: {}", e);
     }
 
     Ok(())

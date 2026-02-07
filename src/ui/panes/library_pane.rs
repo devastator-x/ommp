@@ -15,6 +15,7 @@ enum LibraryEntry {
     SectionHeader(String),
     Separator,
     AllTracks(usize),
+    PlaylistEntry { idx: usize, name: String, count: usize },
     FavoriteDir(String),
     Album { name: String, artist: String },
 }
@@ -22,7 +23,7 @@ enum LibraryEntry {
 const HOVER_BG: Color = Color::Indexed(238);
 
 /// Library browser for the Queue tab.
-/// Shows 3 sections: Default Playlist, Directories, Albums.
+/// Shows 4 sections: Playlist, Directories, Albums.
 pub struct LibraryPane {
     pub selected: usize,
     pub scroll_offset: usize,
@@ -41,9 +42,16 @@ impl LibraryPane {
     fn build_entries(app: &App) -> Vec<LibraryEntry> {
         let mut entries = Vec::new();
 
-        // --- Default Playlist ---
-        entries.push(LibraryEntry::SectionHeader("\u{25B8} Default Playlist".into()));
+        // --- Playlist ---
+        entries.push(LibraryEntry::SectionHeader("\u{25B8} Playlist".into()));
         entries.push(LibraryEntry::AllTracks(app.library.tracks.len()));
+        for (idx, pl) in app.playlists.iter().enumerate() {
+            entries.push(LibraryEntry::PlaylistEntry {
+                idx,
+                name: pl.name.clone(),
+                count: pl.tracks.len(),
+            });
+        }
 
         entries.push(LibraryEntry::Separator);
 
@@ -166,6 +174,25 @@ impl Pane for LibraryPane {
                             ]))
                         }
                     }
+                    LibraryEntry::PlaylistEntry { name, count, .. } => {
+                        let icon = "\u{2605} "; // ★
+                        if is_selected && focused {
+                            ListItem::new(Line::from(vec![
+                                Span::styled(format!("  {}", icon), highlight),
+                                Span::styled(name.as_str(), highlight),
+                                Span::styled(format!(" ({})", count), highlight),
+                            ]))
+                        } else {
+                            ListItem::new(Line::from(vec![
+                                Span::styled(format!("  {}", icon), Style::default().fg(Color::Yellow).bg(hover_bg)),
+                                Span::styled(name.as_str(), Style::default().fg(theme.fg).bg(hover_bg)),
+                                Span::styled(
+                                    format!(" ({})", count),
+                                    Style::default().fg(Color::DarkGray).bg(hover_bg),
+                                ),
+                            ]))
+                        }
+                    }
                     LibraryEntry::FavoriteDir(name) => {
                         if is_selected && focused {
                             ListItem::new(Line::from(vec![
@@ -280,6 +307,14 @@ impl Pane for LibraryPane {
                 }
                 match &entries[self.selected] {
                     LibraryEntry::SectionHeader(_) | LibraryEntry::Separator => None,
+                    LibraryEntry::PlaylistEntry { idx, .. } => {
+                        if let Some(pl) = app.playlists.get(*idx) {
+                            if !pl.tracks.is_empty() {
+                                return Some(AppAction::AddToQueue(pl.tracks.clone()));
+                            }
+                        }
+                        None
+                    }
                     LibraryEntry::AllTracks(_) => {
                         let indices: Vec<usize> = (0..app.library.tracks.len()).collect();
                         if !indices.is_empty() {

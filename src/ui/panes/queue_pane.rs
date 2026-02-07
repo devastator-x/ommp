@@ -169,8 +169,16 @@ impl Pane for QueuePane {
                         )
                     };
 
+                let in_playlist = app.playlists.iter().any(|pl| pl.tracks.contains(&track_idx));
                 let prefix = if is_current { "\u{25B6} " } else { "  " }; // ▶
-                let title_fitted = fit_to_width(&track.title, title_max);
+
+                // Star integrated into title text so it stays next to the title
+                let title_text = if in_playlist {
+                    format!("{} \u{2605}", track.title) // "Title ★"
+                } else {
+                    track.title.clone()
+                };
+                let title_fitted = fit_to_width(&title_text, title_max);
                 let artist_fitted = fit_to_width(artist, artist_max);
 
                 // Right-align ext to ext_col_width
@@ -178,15 +186,26 @@ impl Pane for QueuePane {
                 // Right-align dur to dur_col_width
                 let dur_padded = format!("{:>width$}", dur, width = dur_col_width);
 
+                // Row background for gap spans (keeps selection/hover highlight continuous)
+                let row_bg = if is_selected && focused {
+                    sel_style
+                } else if is_current && is_hovered {
+                    Style::default().bg(HOVER_BG)
+                } else if is_hovered {
+                    Style::default().bg(HOVER_BG)
+                } else {
+                    Style::default()
+                };
+
                 ListItem::new(Line::from(vec![
                     Span::styled(prefix, prefix_style),
                     Span::styled(title_fitted, title_style),
                     Span::styled(artist_fitted, artist_style),
-                    Span::styled(" ", Style::default()),
+                    Span::styled(" ", row_bg),
                     Span::styled(ext_padded, ext_style),
-                    Span::styled(" ", Style::default()),
+                    Span::styled(" ", row_bg),
                     Span::styled(dur_padded, dur_style),
-                    Span::styled(" ", Style::default()),
+                    Span::styled(" ", row_bg),
                 ]))
             })
             .collect();

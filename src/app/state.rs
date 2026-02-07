@@ -21,6 +21,22 @@ impl RepeatMode {
         }
     }
 
+    pub fn as_str(self) -> &'static str {
+        match self {
+            RepeatMode::Off => "Off",
+            RepeatMode::All => "All",
+            RepeatMode::One => "One",
+        }
+    }
+
+    pub fn from_label(s: &str) -> Self {
+        match s {
+            "All" => RepeatMode::All,
+            "One" => RepeatMode::One,
+            _ => RepeatMode::Off,
+        }
+    }
+
     pub fn symbol(self) -> &'static str {
         match self {
             RepeatMode::Off => "\u{21BB}",  // ↻
@@ -139,6 +155,21 @@ impl Default for QueueState {
             current_index: None,
             selected_index: 0,
             scroll_offset: 0,
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
+pub struct Playlist {
+    pub name: String,
+    pub tracks: Vec<usize>,
+}
+
+impl Playlist {
+    pub fn new(name: impl Into<String>) -> Self {
+        Self {
+            name: name.into(),
+            tracks: Vec::new(),
         }
     }
 }

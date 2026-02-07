@@ -1,4 +1,5 @@
 pub mod handler;
+pub mod persist;
 pub mod state;
 
 use std::path::PathBuf;
@@ -37,6 +38,11 @@ pub enum AppAction {
     SearchQuery(String),
     EnterSearchMode,
     ExitSearchMode,
+    AddToPlaylist { playlist_idx: usize, track_idx: usize },
+    RemoveFromPlaylist { playlist_idx: usize, track_idx: usize },
+    CreatePlaylist(String),
+    DeletePlaylist(usize),
+    RenamePlaylist { idx: usize, name: String },
 }
 
 pub struct App {
@@ -50,6 +56,7 @@ pub struct App {
     pub search_query: String,
     pub search_mode: bool,
     pub search_results: Vec<usize>,
+    pub playlists: Vec<state::Playlist>,
     audio_engine: Option<AudioEngine>,
 }
 
@@ -66,6 +73,7 @@ impl App {
             search_query: String::new(),
             search_mode: false,
             search_results: Vec::new(),
+            playlists: vec![state::Playlist::new("Bookmarks")],
             audio_engine: None,
         }
     }
@@ -232,6 +240,31 @@ impl App {
             }
             AppAction::ExitSearchMode => {
                 self.search_mode = false;
+            }
+            AppAction::AddToPlaylist { playlist_idx, track_idx } => {
+                if let Some(pl) = self.playlists.get_mut(playlist_idx) {
+                    if !pl.tracks.contains(&track_idx) {
+                        pl.tracks.push(track_idx);
+                    }
+                }
+            }
+            AppAction::RemoveFromPlaylist { playlist_idx, track_idx } => {
+                if let Some(pl) = self.playlists.get_mut(playlist_idx) {
+                    pl.tracks.retain(|&t| t != track_idx);
+                }
+            }
+            AppAction::CreatePlaylist(name) => {
+                self.playlists.push(state::Playlist::new(name));
+            }
+            AppAction::DeletePlaylist(idx) => {
+                if idx < self.playlists.len() {
+                    self.playlists.remove(idx);
+                }
+            }
+            AppAction::RenamePlaylist { idx, name } => {
+                if let Some(pl) = self.playlists.get_mut(idx) {
+                    pl.name = name;
+                }
             }
         }
     }
