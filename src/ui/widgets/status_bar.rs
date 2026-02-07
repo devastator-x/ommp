@@ -13,14 +13,12 @@ pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
         Block::default()
             .borders(Borders::ALL)
             .border_style(Style::default().fg(Color::Yellow))
-            .title(" Status [RESIZE] ")
+            .title(" [RESIZE] ")
             .title_style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))
     } else {
         Block::default()
             .borders(Borders::ALL)
             .border_style(Style::default().fg(theme.border_unfocused))
-            .title(" Status ")
-            .title_style(Style::default().fg(Color::White))
     };
 
     let inner = block.inner(area);

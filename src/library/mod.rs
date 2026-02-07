@@ -23,12 +23,19 @@ impl Library {
 
     pub fn get_artists(&self) -> Vec<String> {
         let mut set = BTreeSet::new();
+        let mut has_unknown = false;
         for t in &self.tracks {
-            if !t.artist.is_empty() {
+            if t.artist.is_empty() {
+                has_unknown = true;
+            } else {
                 set.insert(t.artist.clone());
             }
         }
-        set.into_iter().collect()
+        let mut result: Vec<String> = set.into_iter().collect();
+        if has_unknown {
+            result.push("Unknown Artist".to_string());
+        }
+        result
     }
 
     pub fn get_album_artists(&self) -> Vec<String> {
@@ -70,7 +77,13 @@ impl Library {
         self.tracks
             .iter()
             .enumerate()
-            .filter(|(_, t)| t.artist == artist)
+            .filter(|(_, t)| {
+                if artist == "Unknown Artist" {
+                    t.artist.is_empty()
+                } else {
+                    t.artist == artist
+                }
+            })
             .map(|(i, _)| i)
             .collect()
     }

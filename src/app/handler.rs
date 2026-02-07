@@ -173,11 +173,8 @@ pub fn handle_key_event(key: KeyEvent, app: &App, ui: &mut Ui) -> Vec<AppAction>
         return actions;
     }
 
-    // In search input mode, route everything to search pane
+    // In search input mode, ignore (search handled by modal now)
     if app.search_mode {
-        if let Some(action) = ui.search_pane.handle_key(key, app) {
-            actions.push(action);
-        }
         return actions;
     }
 
@@ -193,11 +190,6 @@ pub fn handle_key_event(key: KeyEvent, app: &App, ui: &mut Ui) -> Vec<AppAction>
             }
             KeyCode::Char('r') => {
                 ui.resize_mode = !ui.resize_mode;
-            }
-            KeyCode::Char('p') => {
-                ui.show_playlist_modal = true;
-                ui.playlist_modal_selected = 0;
-                ui.playlist_modal_mode = PlaylistModalMode::List;
             }
             _ => {} // unknown chord, ignore
         }
@@ -307,23 +299,15 @@ pub fn handle_key_event(key: KeyEvent, app: &App, ui: &mut Ui) -> Vec<AppAction>
             return actions;
         }
         (_, KeyCode::Char('4')) => {
-            actions.push(AppAction::SwitchTab(Tab::AlbumArtists));
-            return actions;
-        }
-        (_, KeyCode::Char('5')) => {
             actions.push(AppAction::SwitchTab(Tab::Albums));
             return actions;
         }
-        (_, KeyCode::Char('6')) => {
+        (_, KeyCode::Char('5')) => {
             actions.push(AppAction::SwitchTab(Tab::Genre));
             return actions;
         }
-        (_, KeyCode::Char('7')) => {
+        (_, KeyCode::Char('6')) => {
             actions.push(AppAction::SwitchTab(Tab::Playlists));
-            return actions;
-        }
-        (_, KeyCode::Char('8')) => {
-            actions.push(AppAction::SwitchTab(Tab::Search));
             return actions;
         }
         // h/l for pane focus
@@ -344,11 +328,9 @@ pub fn handle_key_event(key: KeyEvent, app: &App, ui: &mut Ui) -> Vec<AppAction>
             Tab::Queue => ui.library_pane.handle_key(key, app),
             Tab::Directories => ui.dir_browser_pane.handle_key(key, app),
             Tab::Artists => ui.artists_pane.handle_key(key, app),
-            Tab::AlbumArtists => ui.album_artists_pane.handle_key(key, app),
             Tab::Albums => ui.albums_pane.handle_key(key, app),
             Tab::Genre => ui.genre_pane.handle_key(key, app),
             Tab::Playlists => ui.playlists_pane.handle_key(key, app),
-            Tab::Search => ui.search_pane.handle_key(key, app),
         },
         FocusedPane::Playlist => {
             match key.code {
@@ -536,11 +518,9 @@ pub fn handle_mouse_event(
                     Tab::Queue => ui.library_pane.handle_mouse(mouse, areas.library, app),
                     Tab::Directories => ui.dir_browser_pane.handle_mouse(mouse, areas.library, app),
                     Tab::Artists => ui.artists_pane.handle_mouse(mouse, areas.library, app),
-                    Tab::AlbumArtists => ui.album_artists_pane.handle_mouse(mouse, areas.library, app),
                     Tab::Albums => ui.albums_pane.handle_mouse(mouse, areas.library, app),
                     Tab::Genre => ui.genre_pane.handle_mouse(mouse, areas.library, app),
                     Tab::Playlists => ui.playlists_pane.handle_mouse(mouse, areas.library, app),
-                    Tab::Search => ui.search_pane.handle_mouse(mouse, areas.library, app),
                 };
                 // Then, trigger Enter action to activate the clicked item
                 let enter_key = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
@@ -548,11 +528,9 @@ pub fn handle_mouse_event(
                     Tab::Queue => ui.library_pane.handle_key(enter_key, app),
                     Tab::Directories => ui.dir_browser_pane.handle_key(enter_key, app),
                     Tab::Artists => ui.artists_pane.handle_key(enter_key, app),
-                    Tab::AlbumArtists => ui.album_artists_pane.handle_key(enter_key, app),
                     Tab::Albums => ui.albums_pane.handle_key(enter_key, app),
                     Tab::Genre => ui.genre_pane.handle_key(enter_key, app),
                     Tab::Playlists => ui.playlists_pane.handle_key(enter_key, app),
-                    Tab::Search => ui.search_pane.handle_key(enter_key, app),
                 };
                 if let Some(action) = activate_action {
                     if matches!(action, AppAction::AddToQueue(_)) {
@@ -586,11 +564,9 @@ pub fn handle_mouse_event(
                     Tab::Queue => ui.library_pane.handle_mouse(mouse, areas.library, app),
                     Tab::Directories => ui.dir_browser_pane.handle_mouse(mouse, areas.library, app),
                     Tab::Artists => ui.artists_pane.handle_mouse(mouse, areas.library, app),
-                    Tab::AlbumArtists => ui.album_artists_pane.handle_mouse(mouse, areas.library, app),
                     Tab::Albums => ui.albums_pane.handle_mouse(mouse, areas.library, app),
                     Tab::Genre => ui.genre_pane.handle_mouse(mouse, areas.library, app),
                     Tab::Playlists => ui.playlists_pane.handle_mouse(mouse, areas.library, app),
-                    Tab::Search => ui.search_pane.handle_mouse(mouse, areas.library, app),
                 };
                 if let Some(a) = action {
                     actions.push(a);
@@ -619,10 +595,9 @@ fn clear_all_hovers(ui: &mut Ui) {
     ui.library_pane.hover_row = None;
     ui.dir_browser_pane.hover_row = None;
     ui.artists_pane.hover_row = None;
-    ui.album_artists_pane.hover_row = None;
     ui.albums_pane.hover_row = None;
     ui.genre_pane.hover_row = None;
-    ui.search_pane.hover_row = None;
+    ui.playlists_pane.hover_row = None;
 }
 
 /// Update hover_row state for panes based on mouse position
@@ -670,10 +645,6 @@ fn update_hover(
                     let row = ui.artists_pane.scroll_offset + visual_row;
                     ui.artists_pane.hover_row = Some(row);
                 }
-                Tab::AlbumArtists => {
-                    let row = ui.album_artists_pane.scroll_offset + visual_row;
-                    ui.album_artists_pane.hover_row = Some(row);
-                }
                 Tab::Albums => {
                     let row = ui.albums_pane.scroll_offset + visual_row;
                     ui.albums_pane.hover_row = Some(row);
@@ -683,11 +654,8 @@ fn update_hover(
                     ui.genre_pane.hover_row = Some(row);
                 }
                 Tab::Playlists => {
-                    // PlaylistsPane has no list to hover
-                }
-                Tab::Search => {
-                    let row = ui.search_pane.scroll_offset + visual_row;
-                    ui.search_pane.hover_row = Some(row);
+                    let row = ui.playlists_pane.scroll_offset + visual_row;
+                    ui.playlists_pane.hover_row = Some(row);
                 }
             }
         }

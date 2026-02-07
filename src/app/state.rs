@@ -51,23 +51,19 @@ pub enum Tab {
     Queue,
     Directories,
     Artists,
-    AlbumArtists,
     Albums,
     Genre,
     Playlists,
-    Search,
 }
 
 impl Tab {
-    pub const ALL: [Tab; 8] = [
+    pub const ALL: [Tab; 6] = [
         Tab::Queue,
         Tab::Directories,
         Tab::Artists,
-        Tab::AlbumArtists,
         Tab::Albums,
         Tab::Genre,
         Tab::Playlists,
-        Tab::Search,
     ];
 
     pub fn title(self) -> &'static str {
@@ -75,11 +71,9 @@ impl Tab {
             Tab::Queue => "Queue",
             Tab::Directories => "Directories",
             Tab::Artists => "Artists",
-            Tab::AlbumArtists => "Album Artists",
             Tab::Albums => "Albums",
             Tab::Genre => "Genre",
             Tab::Playlists => "Playlists",
-            Tab::Search => "Search",
         }
     }
 

@@ -14,7 +14,6 @@ use crate::app::App;
 use crate::app::state::{FocusedPane, Tab};
 use layout::LayoutAreas;
 use pane::Pane;
-use panes::album_artists_pane::AlbumArtistsPane;
 use panes::albums_pane::AlbumsPane;
 use panes::artists_pane::ArtistsPane;
 use panes::dir_browser_pane::DirBrowserPane;
@@ -23,7 +22,6 @@ use panes::library_pane::LibraryPane;
 use panes::lyrics_pane::LyricsPane;
 use panes::playlists_pane::PlaylistsPane;
 use panes::queue_pane::QueuePane;
-use panes::search_pane::SearchPane;
 use theme::Theme;
 use widgets::progress_bar;
 use widgets::status_bar;
@@ -35,11 +33,9 @@ pub struct Ui {
     pub dir_browser_pane: DirBrowserPane,
     pub queue_pane: QueuePane,
     pub artists_pane: ArtistsPane,
-    pub album_artists_pane: AlbumArtistsPane,
     pub albums_pane: AlbumsPane,
     pub genre_pane: GenrePane,
     pub playlists_pane: PlaylistsPane,
-    pub search_pane: SearchPane,
     pub lyrics_pane: LyricsPane,
     pub last_click: Option<(std::time::Instant, u16, u16)>,
     /// Last known mouse position (column, row) for hover tracking
@@ -84,11 +80,9 @@ impl Ui {
             dir_browser_pane: DirBrowserPane::new(music_dir),
             queue_pane: QueuePane::new(),
             artists_pane: ArtistsPane::new(),
-            album_artists_pane: AlbumArtistsPane::new(),
             albums_pane: AlbumsPane::new(),
             genre_pane: GenrePane::new(),
             playlists_pane: PlaylistsPane::new(),
-            search_pane: SearchPane::new(),
             lyrics_pane: LyricsPane::new(),
             last_click: None,
             mouse_pos: None,
@@ -125,11 +119,9 @@ impl Ui {
             Tab::Queue => self.library_pane.render(frame, areas.library, lib_focused, app, &self.theme),
             Tab::Directories => self.dir_browser_pane.render(frame, areas.library, lib_focused, app, &self.theme),
             Tab::Artists => self.artists_pane.render(frame, areas.library, lib_focused, app, &self.theme),
-            Tab::AlbumArtists => self.album_artists_pane.render(frame, areas.library, lib_focused, app, &self.theme),
             Tab::Albums => self.albums_pane.render(frame, areas.library, lib_focused, app, &self.theme),
             Tab::Genre => self.genre_pane.render(frame, areas.library, lib_focused, app, &self.theme),
             Tab::Playlists => self.playlists_pane.render(frame, areas.library, lib_focused, app, &self.theme),
-            Tab::Search => self.search_pane.render(frame, areas.library, lib_focused, app, &self.theme),
         }
 
         // Center pane (Queue)
