@@ -16,14 +16,13 @@ const GRAD: [Color; 6] = [
     Color::Rgb(255, 60, 220),  // magenta
 ];
 
-const LOGO: [&str; 7] = [
-    r"  ___  __  __ __  __ ____  ",
-    r" / _ \|  \/  |  \/  |  _ \ ",
-    r"| | | | \  / | \  / | |_) |",
-    r"| | | | |\/| | |\/| |  __/ ",
-    r"| |_| | |  | | |  | | |    ",
-    r" \___/|_|  |_|_|  |_|_|    ",
-    r"                            ",
+// Unicode block-art logo (█ style)
+const LOGO: [&str; 5] = [
+    " ██████  ██    ██ ██    ██ ██████  ",
+    "██    ██ ███  ███ ███  ███ ██   ██ ",
+    "██    ██ ██ ██ ██ ██ ██ ██ ██████  ",
+    "██    ██ ██    ██ ██    ██ ██      ",
+    " ██████  ██    ██ ██    ██ ██      ",
 ];
 
 pub fn render_about_modal(frame: &mut Frame, area: Rect, theme: &Theme) {
@@ -51,7 +50,6 @@ pub fn render_about_modal(frame: &mut Frame, area: Rect, theme: &Theme) {
             .chars()
             .enumerate()
             .map(|(col, ch)| {
-                // Gradient based on column position + slight row offset
                 let progress = (col as f32 / row.len().max(1) as f32
                     + row_idx as f32 * 0.08)
                     .fract();
@@ -106,7 +104,7 @@ pub fn render_about_modal(frame: &mut Frame, area: Rect, theme: &Theme) {
 
     lines.push(Line::from(""));
 
-    // Links
+    // Links (using Nerd Font icons)
     let link_style = Style::default()
         .fg(Color::Rgb(100, 180, 255))
         .add_modifier(Modifier::UNDERLINED);
@@ -115,20 +113,20 @@ pub fn render_about_modal(frame: &mut Frame, area: Rect, theme: &Theme) {
         .add_modifier(Modifier::BOLD);
 
     lines.push(Line::from(vec![
-        Span::styled("  \u{F09B} GitHub    ", label_style),
-        Span::styled("github.com/devastator-x/ommp", link_style),
+        Span::styled("  \u{F09B} ", label_style),  // nf-fa-github
+        Span::styled("https://github.com/devastator-x/ommp", link_style),
     ]));
 
     lines.push(Line::from(vec![
-        Span::styled("  \u{2665} Sponsor   ", label_style),
-        Span::styled("github.com/sponsors/devastator-x", link_style),
+        Span::styled("  \u{F004} ", label_style),  // nf-fa-heart
+        Span::styled("https://github.com/sponsors/devastator-x", link_style),
     ]));
 
     lines.push(Line::from(""));
 
-    // Music note decoration
+    // Music note decoration (using Nerd Font music icon)
     lines.push(Line::from(Span::styled(
-        "\u{266B} \u{266A} \u{266B}  Terminal music, your way  \u{266B} \u{266A} \u{266B}",
+        "\u{F001} \u{F001} \u{F001}  Terminal music, your way  \u{F001} \u{F001} \u{F001}",
         Style::default().fg(Color::Rgb(100, 200, 255)),
     )).alignment(Alignment::Center));
 
@@ -136,7 +134,7 @@ pub fn render_about_modal(frame: &mut Frame, area: Rect, theme: &Theme) {
 
     // Footer
     lines.push(Line::from(Span::styled(
-        "Press Esc to close",
+        "g: Open GitHub  s: Open Sponsor  Esc: Close",
         Style::default().fg(Color::DarkGray),
     )).alignment(Alignment::Center));
 

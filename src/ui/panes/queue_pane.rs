@@ -170,11 +170,11 @@ impl Pane for QueuePane {
                     };
 
                 let in_playlist = app.playlists.iter().any(|pl| pl.tracks.contains(&track_idx));
-                let prefix = if is_current { "\u{25B6} " } else { "  " }; // ▶
+                let prefix = if is_current { "\u{F04B} " } else { "  " }; // nf-fa-play
 
                 // Star integrated into title text so it stays next to the title
                 let title_text = if in_playlist {
-                    format!("{} \u{2605}", track.title) // "Title ★"
+                    format!("{} \u{F005}", track.title) // "Title nf-fa-star"
                 } else {
                     track.title.clone()
                 };

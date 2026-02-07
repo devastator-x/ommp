@@ -104,8 +104,8 @@ pub fn render_playlist_modal(
                     let already_in = current_track_idx
                         .map_or(false, |ti| pl.tracks.contains(&ti));
 
-                    let check = if already_in { "\u{2713} " } else { "  " };
-                    let icon = "\u{2605} ";
+                    let check = if already_in { "\u{F00C} " } else { "  " };
+                    let icon = "\u{F005} ";
 
                     let style = if is_selected {
                         Style::default()

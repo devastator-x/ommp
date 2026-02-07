@@ -27,9 +27,9 @@ pub fn render_progress_bar(frame: &mut Frame, area: Rect, app: &App, theme: &The
 
     // Play icon
     let icon = match app.playback.state {
-        PlayState::Playing => "▶",
-        PlayState::Paused => "⏸",
-        PlayState::Stopped => "⏹",
+        PlayState::Playing => "\u{F04B}",  // nf-fa-play
+        PlayState::Paused => "\u{F04C}",   // nf-fa-pause
+        PlayState::Stopped => "\u{F04D}",  // nf-fa-stop
     };
     let icon_widget = Paragraph::new(Line::from(Span::styled(
         format!(" {}", icon),

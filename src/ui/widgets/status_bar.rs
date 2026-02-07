@@ -35,9 +35,9 @@ pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
 
     // Left: Play state + time
     let state_icon = match app.playback.state {
-        PlayState::Playing => "▶",
-        PlayState::Paused => "⏸",
-        PlayState::Stopped => "⏹",
+        PlayState::Playing => "\u{F04B}",  // nf-fa-play
+        PlayState::Paused => "\u{F04C}",   // nf-fa-pause
+        PlayState::Stopped => "\u{F04D}",  // nf-fa-stop
     };
 
     let pos = format_time(app.playback.position_secs);
@@ -136,8 +136,8 @@ pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
     };
 
     let right_line2 = Line::from(vec![
-        Span::styled("\u{2605} ", bookmark_style),  // ★
-        Span::styled("\u{21C6} ", shuffle_style),
+        Span::styled("\u{F005} ", bookmark_style),  // nf-fa-star
+        Span::styled("\u{F074} ", shuffle_style),   // nf-fa-random
         Span::styled(format!("{} ", app.playback.repeat.symbol()), repeat_style),
     ]).alignment(Alignment::Right);
 

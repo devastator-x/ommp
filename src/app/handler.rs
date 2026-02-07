@@ -12,10 +12,29 @@ use crate::ui::Ui;
 pub fn handle_key_event(key: KeyEvent, app: &App, ui: &mut Ui) -> Vec<AppAction> {
     let mut actions = Vec::new();
 
-    // About modal: Esc to close
+    // About modal: Esc to close, g/s to open URLs
     if ui.show_about_modal {
-        if matches!(key.code, KeyCode::Esc | KeyCode::Char('q')) {
-            ui.show_about_modal = false;
+        match key.code {
+            KeyCode::Esc | KeyCode::Char('q') => {
+                ui.show_about_modal = false;
+            }
+            KeyCode::Char('g') => {
+                let _ = std::process::Command::new("xdg-open")
+                    .arg("https://github.com/devastator-x/ommp")
+                    .stdin(std::process::Stdio::null())
+                    .stdout(std::process::Stdio::null())
+                    .stderr(std::process::Stdio::null())
+                    .spawn();
+            }
+            KeyCode::Char('s') => {
+                let _ = std::process::Command::new("xdg-open")
+                    .arg("https://github.com/sponsors/devastator-x")
+                    .stdin(std::process::Stdio::null())
+                    .stdout(std::process::Stdio::null())
+                    .stderr(std::process::Stdio::null())
+                    .spawn();
+            }
+            _ => {}
         }
         return actions;
     }
@@ -382,6 +401,11 @@ pub fn handle_mouse_event(
     // Store mouse position for hover tracking across all event types
     ui.mouse_pos = Some((x, y));
 
+    // Block all mouse events when any modal is open
+    if ui.show_about_modal || ui.show_help_modal || ui.show_search_modal || ui.show_playlist_modal {
+        return actions;
+    }
+
     // Determine which pane the mouse is in
     let in_library = x >= areas.library.x
         && x < areas.library.x + areas.library.width
@@ -678,6 +702,10 @@ fn update_hover(
 /// Returns a focus action if the mouse is over a different pane.
 pub fn refresh_hover(app: &App, ui: &mut Ui, terminal_area: ratatui::layout::Rect) -> Vec<AppAction> {
     let mut actions = Vec::new();
+    // Skip hover updates when any modal is open
+    if ui.show_about_modal || ui.show_help_modal || ui.show_search_modal || ui.show_playlist_modal {
+        return actions;
+    }
     if let Some((x, y)) = ui.mouse_pos {
         let areas = LayoutAreas::compute(terminal_area, ui.pane_widths);
         let in_library = x >= areas.library.x

@@ -39,9 +39,9 @@ impl RepeatMode {
 
     pub fn symbol(self) -> &'static str {
         match self {
-            RepeatMode::Off => "\u{21BB}",  // ↻
-            RepeatMode::All => "\u{21BB}",  // ↻
-            RepeatMode::One => "\u{21BB}1", // ↻1
+            RepeatMode::Off => "\u{F0456}",  // nf-md-repeat
+            RepeatMode::All => "\u{F0456}",  // nf-md-repeat
+            RepeatMode::One => "\u{F0458}",  // nf-md-repeat_once
         }
     }
 }

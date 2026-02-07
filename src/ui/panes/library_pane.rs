@@ -43,7 +43,7 @@ impl LibraryPane {
         let mut entries = Vec::new();
 
         // --- Playlist ---
-        entries.push(LibraryEntry::SectionHeader("\u{25B8} Playlist".into()));
+        entries.push(LibraryEntry::SectionHeader("\u{F054} Playlist".into()));
         entries.push(LibraryEntry::AllTracks(app.library.tracks.len()));
         for (idx, pl) in app.playlists.iter().enumerate() {
             entries.push(LibraryEntry::PlaylistEntry {
@@ -65,7 +65,7 @@ impl LibraryPane {
             }
         }
         entries.push(LibraryEntry::SectionHeader(format!(
-            "\u{25B8} Directories ({})",
+            "\u{F054} Directories ({})",
             dirs.len()
         )));
         for d in &dirs {
@@ -77,7 +77,7 @@ impl LibraryPane {
         // --- Albums ---
         let albums = app.library.get_albums();
         entries.push(LibraryEntry::SectionHeader(format!(
-            "\u{25B8} Albums ({})",
+            "\u{F054} Albums ({})",
             albums.len()
         )));
         for (album, artist) in albums {
@@ -159,13 +159,13 @@ impl Pane for LibraryPane {
                     LibraryEntry::AllTracks(track_count) => {
                         if is_selected && focused {
                             ListItem::new(Line::from(vec![
-                                Span::styled("  \u{266A} ", highlight),
+                                Span::styled("  \u{F001} ", highlight),
                                 Span::styled("All Tracks", highlight),
                                 Span::styled(format!(" ({})", track_count), highlight),
                             ]))
                         } else {
                             ListItem::new(Line::from(vec![
-                                Span::styled("  \u{266A} ", Style::default().fg(Color::Cyan).bg(hover_bg)),
+                                Span::styled("  \u{F001} ", Style::default().fg(Color::Cyan).bg(hover_bg)),
                                 Span::styled("All Tracks", Style::default().fg(theme.fg).bg(hover_bg)),
                                 Span::styled(
                                     format!(" ({})", track_count),
@@ -175,7 +175,7 @@ impl Pane for LibraryPane {
                         }
                     }
                     LibraryEntry::PlaylistEntry { name, count, .. } => {
-                        let icon = "\u{2605} "; // ★
+                        let icon = "\u{F005} "; // ★
                         if is_selected && focused {
                             ListItem::new(Line::from(vec![
                                 Span::styled(format!("  {}", icon), highlight),
@@ -196,12 +196,12 @@ impl Pane for LibraryPane {
                     LibraryEntry::FavoriteDir(name) => {
                         if is_selected && focused {
                             ListItem::new(Line::from(vec![
-                                Span::styled("  \u{25C6} ", highlight),
+                                Span::styled("  \u{F07B} ", highlight),
                                 Span::styled(format!("{}/", name), highlight),
                             ]))
                         } else {
                             ListItem::new(Line::from(vec![
-                                Span::styled("  \u{25C6} ", Style::default().fg(Color::Green).bg(hover_bg)),
+                                Span::styled("  \u{F07B} ", Style::default().fg(Color::Green).bg(hover_bg)),
                                 Span::styled(format!("{}/", name), Style::default().fg(theme.fg).bg(hover_bg)),
                             ]))
                         }
@@ -220,7 +220,7 @@ impl Pane for LibraryPane {
 
                         if is_selected && focused {
                             let mut spans = vec![
-                                Span::styled("  \u{25CF} ", highlight),
+                                Span::styled("  \u{F0025} ", highlight),
                                 Span::styled(album_display, highlight),
                             ];
                             if !artist_display.is_empty() {
@@ -233,7 +233,7 @@ impl Pane for LibraryPane {
                         } else {
                             let mut spans = vec![
                                 Span::styled(
-                                    "  \u{25CF} ",
+                                    "  \u{F0025} ",
                                     Style::default().fg(Color::Magenta).bg(hover_bg),
                                 ),
                                 Span::styled(album_display, Style::default().fg(theme.fg).bg(hover_bg)),

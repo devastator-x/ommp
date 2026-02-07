@@ -80,14 +80,14 @@ impl Pane for PlaylistsPane {
 
                 if is_selected && focused {
                     ListItem::new(Line::from(vec![
-                        Span::styled(format!("  \u{2605} {}", pl.name), highlight),
+                        Span::styled(format!("  \u{F005} {}", pl.name), highlight),
                         Span::styled(format!(" ({})", pl.tracks.len()), highlight),
                     ]))
                 } else {
                     let bg = if is_hovered { HOVER_BG } else { Color::Reset };
                     ListItem::new(Line::from(vec![
                         Span::styled(
-                            "  \u{2605} ",
+                            "  \u{F005} ",
                             Style::default().fg(Color::Yellow).bg(bg),
                         ),
                         Span::styled(

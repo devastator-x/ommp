@@ -113,13 +113,13 @@ impl Pane for DirBrowserPane {
                     DirEntry::ParentDir => {
                         if is_selected && focused {
                             ListItem::new(Line::from(vec![
-                                Span::styled("  \u{25C6} ", highlight),
+                                Span::styled("  \u{F07B} ", highlight),
                                 Span::styled("..", highlight),
                             ]))
                         } else {
                             let bg = if is_hovered { HOVER_BG } else { Color::Reset };
                             ListItem::new(Line::from(vec![
-                                Span::styled("  \u{25C6} ", Style::default().fg(Color::Yellow).bg(bg)),
+                                Span::styled("  \u{F07B} ", Style::default().fg(Color::Yellow).bg(bg)),
                                 Span::styled("..", Style::default().fg(theme.fg).bg(bg)),
                             ]))
                         }
@@ -127,13 +127,13 @@ impl Pane for DirBrowserPane {
                     DirEntry::Directory(name) => {
                         if is_selected && focused {
                             ListItem::new(Line::from(vec![
-                                Span::styled("  \u{25C6} ", highlight),
+                                Span::styled("  \u{F07B} ", highlight),
                                 Span::styled(format!("{}/", name), highlight),
                             ]))
                         } else {
                             let bg = if is_hovered { HOVER_BG } else { Color::Reset };
                             ListItem::new(Line::from(vec![
-                                Span::styled("  \u{25C6} ", Style::default().fg(Color::Green).bg(bg)),
+                                Span::styled("  \u{F07B} ", Style::default().fg(Color::Green).bg(bg)),
                                 Span::styled(format!("{}/", name), Style::default().fg(theme.fg).bg(bg)),
                             ]))
                         }
@@ -142,13 +142,13 @@ impl Pane for DirBrowserPane {
                         let t = &app.library.tracks[*idx];
                         if is_selected && focused {
                             ListItem::new(Line::from(vec![
-                                Span::styled("  \u{266A} ", highlight),
+                                Span::styled("  \u{F001} ", highlight),
                                 Span::styled(&t.title, highlight),
                             ]))
                         } else {
                             let bg = if is_hovered { HOVER_BG } else { Color::Reset };
                             ListItem::new(Line::from(vec![
-                                Span::styled("  \u{266A} ", Style::default().fg(Color::Cyan).bg(bg)),
+                                Span::styled("  \u{F001} ", Style::default().fg(Color::Cyan).bg(bg)),
                                 Span::styled(&t.title, Style::default().fg(theme.fg).bg(bg)),
                             ]))
                         }
