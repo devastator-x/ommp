@@ -101,7 +101,6 @@ impl Pane for LibraryPane {
         let block = Block::default()
             .borders(Borders::ALL)
             .border_style(Style::default().fg(border_color))
-            .title(" Library ")
             .title_style(Style::default().fg(if focused {
                 theme.border_focused
             } else {

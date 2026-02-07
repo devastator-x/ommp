@@ -38,7 +38,6 @@ impl Pane for SearchPane {
         let block = Block::default()
             .borders(Borders::ALL)
             .border_style(Style::default().fg(border_color))
-            .title(format!(" Search ({}) ", app.search_results.len()))
             .title_style(Style::default().fg(if focused {
                 theme.border_focused
             } else {

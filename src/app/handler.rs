@@ -241,6 +241,16 @@ pub fn handle_key_event(key: KeyEvent, app: &App, ui: &mut Ui) -> Vec<AppAction>
             KeyCode::Char('l') | KeyCode::Right => {
                 resize_pane(ui, app.focus, 2);
             }
+            KeyCode::Char('k') | KeyCode::Up => {
+                // Grow info pane (shrink lyrics)
+                let new_split = (ui.right_split as i16 - 3).clamp(10, 90) as u16;
+                ui.right_split = new_split;
+            }
+            KeyCode::Char('j') | KeyCode::Down => {
+                // Grow lyrics (shrink info pane)
+                let new_split = (ui.right_split as i16 + 3).clamp(10, 90) as u16;
+                ui.right_split = new_split;
+            }
             KeyCode::Esc | KeyCode::Enter => {
                 ui.resize_mode = false;
             }
@@ -305,6 +315,10 @@ pub fn handle_key_event(key: KeyEvent, app: &App, ui: &mut Ui) -> Vec<AppAction>
                 ui.show_playlist_modal = true;
                 ui.playlist_modal_selected = 0;
             }
+            return actions;
+        }
+        (_, KeyCode::Char('p')) => {
+            ui.info_view = ui.info_view.next();
             return actions;
         }
         (_, KeyCode::Tab) => {
@@ -393,7 +407,7 @@ pub fn handle_mouse_event(
     terminal_area: ratatui::layout::Rect,
 ) -> Vec<AppAction> {
     let mut actions = Vec::new();
-    let areas = LayoutAreas::compute(terminal_area, ui.pane_widths);
+    let areas = LayoutAreas::compute(terminal_area, ui.pane_widths, ui.right_split);
 
     let x = mouse.column;
     let y = mouse.row;
@@ -466,7 +480,7 @@ pub fn handle_mouse_event(
                                 ui.pane_widths[0] = new_lib;
                                 ui.pane_widths[1] = new_play;
                             }
-                        } else {
+                        } else if border_idx == 1 {
                             // Dragging playlist|lyrics border
                             let new_right = (100u16.saturating_sub(pct)).max(min_w);
                             let new_play = (100 - ui.pane_widths[0] - new_right).max(min_w);
@@ -474,6 +488,15 @@ pub fn handle_mouse_event(
                             if new_right >= min_w {
                                 ui.pane_widths[1] = new_play;
                                 ui.pane_widths[2] = new_right;
+                            }
+                        } else if border_idx == 2 {
+                            // Dragging info|lyrics horizontal border
+                            let right_top = areas.info_pane.y;
+                            let right_h = areas.info_pane.height + areas.lyrics.height;
+                            if right_h > 0 {
+                                let rel_y = y.saturating_sub(right_top);
+                                let pct_v = ((rel_y as u32 * 100) / right_h as u32).clamp(10, 90) as u16;
+                                ui.right_split = pct_v;
                             }
                         }
                     }
@@ -501,6 +524,15 @@ pub fn handle_mouse_event(
                 }
                 if x.abs_diff(border1_x) <= 1 {
                     ui.dragging_border = Some(1);
+                    return actions;
+                }
+                // Horizontal border between info_pane and lyrics (within right column)
+                let border2_y = areas.info_pane.y + areas.info_pane.height;
+                if x >= areas.info_pane.x
+                    && x < areas.info_pane.x + areas.info_pane.width
+                    && y.abs_diff(border2_y) <= 1
+                {
+                    ui.dragging_border = Some(2);
                     return actions;
                 }
             }
@@ -707,7 +739,7 @@ pub fn refresh_hover(app: &App, ui: &mut Ui, terminal_area: ratatui::layout::Rec
         return actions;
     }
     if let Some((x, y)) = ui.mouse_pos {
-        let areas = LayoutAreas::compute(terminal_area, ui.pane_widths);
+        let areas = LayoutAreas::compute(terminal_area, ui.pane_widths, ui.right_split);
         let in_library = x >= areas.library.x
             && x < areas.library.x + areas.library.width
             && y >= areas.library.y

@@ -9,6 +9,18 @@ pub struct SavedState {
     pub repeat: String,
     pub pane_widths: [u16; 3],
     pub playlists: Vec<SavedPlaylist>,
+    #[serde(default = "default_info_view")]
+    pub info_view: String,
+    #[serde(default = "default_right_split")]
+    pub right_split: u16,
+}
+
+fn default_info_view() -> String {
+    "Clock".to_string()
+}
+
+fn default_right_split() -> u16 {
+    50
 }
 
 #[derive(Serialize, Deserialize)]

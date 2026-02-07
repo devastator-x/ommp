@@ -168,10 +168,32 @@ impl Playlist {
     }
 }
 
-#[derive(Debug, Clone)]
-pub enum LyricsStatus {
-    None,
-    Loading,
-    Found(String),
-    NotFound,
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum InfoView {
+    Clock,
+    AlbumArt,
 }
+
+impl InfoView {
+    pub fn next(self) -> Self {
+        match self {
+            InfoView::Clock => InfoView::AlbumArt,
+            InfoView::AlbumArt => InfoView::Clock,
+        }
+    }
+
+    pub fn as_str(self) -> &'static str {
+        match self {
+            InfoView::Clock => "Clock",
+            InfoView::AlbumArt => "AlbumArt",
+        }
+    }
+
+    pub fn from_label(s: &str) -> Self {
+        match s {
+            "AlbumArt" => InfoView::AlbumArt,
+            _ => InfoView::Clock,
+        }
+    }
+}
+

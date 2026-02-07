@@ -76,7 +76,6 @@ impl Pane for QueuePane {
         let block = Block::default()
             .borders(Borders::ALL)
             .border_style(Style::default().fg(border_color))
-            .title(format!(" Queue ({}) ", count))
             .title_style(Style::default().fg(if focused {
                 theme.border_focused
             } else {

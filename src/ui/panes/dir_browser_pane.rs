@@ -64,16 +64,9 @@ impl Pane for DirBrowserPane {
             theme.border_unfocused
         };
 
-        let dir_name = self
-            .current_dir
-            .file_name()
-            .map(|s| s.to_string_lossy().to_string())
-            .unwrap_or_else(|| "/".to_string());
-
         let block = Block::default()
             .borders(Borders::ALL)
             .border_style(Style::default().fg(border_color))
-            .title(format!(" {} ", dir_name))
             .title_style(Style::default().fg(if focused {
                 theme.border_focused
             } else {

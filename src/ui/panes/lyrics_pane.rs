@@ -1,12 +1,13 @@
 use crossterm::event::{KeyCode, KeyEvent, MouseEvent, MouseEventKind};
 use ratatui::layout::Rect;
 use ratatui::style::Style;
-use ratatui::widgets::{Block, Borders, Paragraph, Wrap};
+use ratatui::widgets::{Block, Borders};
 use ratatui::Frame;
 
 use crate::app::{App, AppAction};
 use crate::ui::pane::Pane;
 use crate::ui::theme::Theme;
+use crate::ui::widgets::info_pane;
 
 pub struct LyricsPane {
     pub scroll_offset: u16,
@@ -28,29 +29,12 @@ impl Pane for LyricsPane {
 
         let block = Block::default()
             .borders(Borders::ALL)
-            .border_style(Style::default().fg(border_color))
-            .title(" Lyrics ")
-            .title_style(Style::default().fg(if focused {
-                theme.border_focused
-            } else {
-                theme.fg
-            }));
+            .border_style(Style::default().fg(border_color));
 
-        use crate::app::state::LyricsStatus;
-        let lyrics_text = match &app.lyrics_status {
-            LyricsStatus::None => "No lyrics available",
-            LyricsStatus::Loading => "Fetching lyrics...",
-            LyricsStatus::Found(text) => text.as_str(),
-            LyricsStatus::NotFound => "No lyrics found",
-        };
+        let inner = block.inner(area);
+        frame.render_widget(block, area);
 
-        let paragraph = Paragraph::new(lyrics_text)
-            .block(block)
-            .wrap(Wrap { trim: false })
-            .scroll((self.scroll_offset, 0))
-            .style(Style::default().fg(theme.fg));
-
-        frame.render_widget(paragraph, area);
+        info_pane::render_track_info(frame, inner, app, theme);
     }
 
     fn handle_key(&mut self, key: KeyEvent, _app: &App) -> Option<AppAction> {

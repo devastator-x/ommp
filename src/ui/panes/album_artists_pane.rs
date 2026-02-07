@@ -40,7 +40,6 @@ impl Pane for AlbumArtistsPane {
         let block = Block::default()
             .borders(Borders::ALL)
             .border_style(Style::default().fg(border_color))
-            .title(format!(" Album Artists ({}) ", count))
             .title_style(Style::default().fg(if focused {
                 theme.border_focused
             } else {

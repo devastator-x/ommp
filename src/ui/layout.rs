@@ -6,12 +6,13 @@ pub struct LayoutAreas {
     pub tab_bar: Rect,
     pub library: Rect,
     pub playlist: Rect,
+    pub info_pane: Rect,
     pub lyrics: Rect,
     pub progress_bar: Rect,
 }
 
 impl LayoutAreas {
-    pub fn compute(area: Rect, pane_widths: [u16; 3]) -> Self {
+    pub fn compute(area: Rect, pane_widths: [u16; 3], right_split: u16) -> Self {
         let vertical = Layout::default()
             .direction(Direction::Vertical)
             .constraints([
@@ -36,12 +37,21 @@ impl LayoutAreas {
             ])
             .split(dashboard);
 
+        let right_col = Layout::default()
+            .direction(Direction::Vertical)
+            .constraints([
+                Constraint::Percentage(right_split),
+                Constraint::Percentage(100 - right_split),
+            ])
+            .split(columns[2]);
+
         Self {
             status_bar,
             tab_bar,
             library: columns[0],
             playlist: columns[1],
-            lyrics: columns[2],
+            info_pane: right_col[0],
+            lyrics: right_col[1],
             progress_bar,
         }
     }

@@ -11,7 +11,7 @@ use widgets::{about_modal, help_modal, playlist_modal, search_modal};
 use widgets::playlist_modal::PlaylistModalMode;
 
 use crate::app::App;
-use crate::app::state::{FocusedPane, Tab};
+use crate::app::state::{FocusedPane, InfoView, Tab};
 use layout::LayoutAreas;
 use pane::Pane;
 use panes::albums_pane::AlbumsPane;
@@ -23,6 +23,7 @@ use panes::lyrics_pane::LyricsPane;
 use panes::playlists_pane::PlaylistsPane;
 use panes::queue_pane::QueuePane;
 use theme::Theme;
+use widgets::info_pane;
 use widgets::progress_bar;
 use widgets::status_bar;
 use widgets::tab_bar;
@@ -46,8 +47,10 @@ pub struct Ui {
     pub pane_widths: [u16; 3],
     /// Resize mode active (Ctrl+E)
     pub resize_mode: bool,
-    /// Border being dragged: 0 = lib|playlist, 1 = playlist|lyrics, None = not dragging
+    /// Border being dragged: 0 = lib|playlist, 1 = playlist|lyrics, 2 = info|lyrics (horizontal), None = not dragging
     pub dragging_border: Option<u8>,
+    /// Right column split: info pane height percentage (top), lyrics gets the rest
+    pub right_split: u16,
     /// Ctrl+E pressed, waiting for next key
     pub chord_pending: bool,
     /// Help modal visible
@@ -72,10 +75,14 @@ pub struct Ui {
     pub playlist_modal_input: String,
     /// About modal visible
     pub show_about_modal: bool,
+    /// Current info pane view (Clock / AlbumArt / TrackInfo)
+    pub info_view: InfoView,
+    /// Album art pixel cache
+    pub album_art_cache: info_pane::AlbumArtCache,
 }
 
 impl Ui {
-    pub fn new(music_dir: std::path::PathBuf) -> Self {
+    pub fn new(music_dir: std::path::PathBuf, picker: ratatui_image::picker::Picker) -> Self {
         Self {
             theme: Theme::default(),
             library_pane: LibraryPane::new(),
@@ -92,6 +99,7 @@ impl Ui {
             pane_widths: [20, 60, 20],
             resize_mode: false,
             dragging_border: None,
+            right_split: 50,
             chord_pending: false,
             show_help_modal: false,
             show_search_modal: false,
@@ -104,11 +112,13 @@ impl Ui {
             playlist_modal_mode: PlaylistModalMode::List,
             playlist_modal_input: String::new(),
             show_about_modal: false,
+            info_view: InfoView::Clock,
+            album_art_cache: info_pane::AlbumArtCache::new(picker),
         }
     }
 
     pub fn render(&mut self, frame: &mut Frame, app: &App) {
-        let areas = LayoutAreas::compute(frame.area(), self.pane_widths);
+        let areas = LayoutAreas::compute(frame.area(), self.pane_widths, self.right_split);
 
         // Status bar
         status_bar::render_status_bar(frame, areas.status_bar, app, &self.theme, self.resize_mode);
@@ -131,7 +141,10 @@ impl Ui {
         let playlist_focused = app.focus == FocusedPane::Playlist;
         self.queue_pane.render(frame, areas.playlist, playlist_focused, app, &self.theme);
 
-        // Right pane (Lyrics)
+        // Right pane top (Info)
+        info_pane::render_info_pane(frame, areas.info_pane, app, &self.theme, self.info_view, &mut self.album_art_cache);
+
+        // Right pane bottom (Lyrics)
         let lyrics_focused = app.focus == FocusedPane::Lyrics;
         self.lyrics_pane.render(frame, areas.lyrics, lyrics_focused, app, &self.theme);
 

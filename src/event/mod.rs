@@ -7,7 +7,6 @@ pub enum Event {
     Resize(u16, u16),
     Tick,
     Audio(AudioEvent),
-    Lyrics(crate::lyrics::LyricsResult),
 }
 
 #[derive(Debug, Clone)]
