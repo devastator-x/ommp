@@ -98,29 +98,37 @@ pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
     // Right: Volume + shuffle/repeat
     let vol_pct = (app.playback.volume * 100.0) as u8;
 
-    let shuffle_color = if app.playback.shuffle { Color::Cyan } else { Color::DarkGray };
-    let shuffle_label = if app.playback.shuffle { "shuffle " } else { "" };
-
-    let (repeat_color, repeat_label) = match app.playback.repeat {
-        crate::app::state::RepeatMode::Off => (Color::DarkGray, ""),
-        crate::app::state::RepeatMode::All => (Color::Cyan, "all "),
-        crate::app::state::RepeatMode::One => (Color::Yellow, "one "),
+    let shuffle_style = if app.playback.shuffle {
+        Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)
+    } else {
+        Style::default().fg(Color::DarkGray)
     };
 
-    let right_line1 = Line::from(Span::styled(
-        format!("Vol: {}% ", vol_pct),
-        Style::default().fg(Color::White),
-    )).alignment(Alignment::Right);
+    let repeat_style = match app.playback.repeat {
+        crate::app::state::RepeatMode::Off => Style::default().fg(Color::DarkGray),
+        crate::app::state::RepeatMode::All => Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
+        crate::app::state::RepeatMode::One => Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
+    };
+
+    // Volume staircase: ▁▂▃▄▅▆▇█
+    const STEPS: [char; 8] = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
+    let filled = (vol_pct as u16 * 8 / 100).min(8) as usize;
+    let mut vol_spans = Vec::with_capacity(10);
+    for (i, &ch) in STEPS.iter().enumerate() {
+        let style = if i < filled {
+            Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)
+        } else {
+            Style::default().fg(Color::Indexed(238))
+        };
+        vol_spans.push(Span::styled(String::from(ch), style));
+    }
+    vol_spans.push(Span::styled(format!(" {}% ", vol_pct), Style::default().fg(Color::White)));
+
+    let right_line1 = Line::from(vol_spans).alignment(Alignment::Right);
 
     let right_line2 = Line::from(vec![
-        Span::styled(
-            format!("\u{21C6} {}", shuffle_label),
-            Style::default().fg(shuffle_color),
-        ),
-        Span::styled(
-            format!("{} {}", app.playback.repeat.symbol(), repeat_label),
-            Style::default().fg(repeat_color),
-        ),
+        Span::styled("\u{21C6} ", shuffle_style),
+        Span::styled(format!("{} ", app.playback.repeat.symbol()), repeat_style),
     ]).alignment(Alignment::Right);
 
     let right = Paragraph::new(vec![right_line1, right_line2]);

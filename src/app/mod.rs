@@ -177,11 +177,10 @@ impl App {
                 self.focus = pane;
             }
             AppAction::AddToQueue(track_indices) => {
-                let was_empty = self.queue.tracks.is_empty();
-                self.queue.tracks.extend(track_indices);
-                if was_empty && !self.queue.tracks.is_empty() {
-                    self.queue.current_index = Some(0);
-                }
+                self.queue.tracks = track_indices;
+                self.queue.current_index = if self.queue.tracks.is_empty() { None } else { Some(0) };
+                self.queue.selected_index = 0;
+                self.queue.scroll_offset = 0;
             }
             AppAction::ClearQueue => {
                 self.queue.tracks.clear();
