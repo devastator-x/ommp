@@ -336,31 +336,10 @@ pub fn handle_mouse_event(
                 }
             }
 
-            // Double-click in library → activate (Enter)
-            if is_double_click && in_library {
-                let enter_key = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
-                let dbl_action = match app.tab {
-                    Tab::Queue => ui.library_pane.handle_key(enter_key, app),
-                    Tab::Directories => ui.dir_browser_pane.handle_key(enter_key, app),
-                    Tab::Artists => ui.artists_pane.handle_key(enter_key, app),
-                    Tab::AlbumArtists => ui.album_artists_pane.handle_key(enter_key, app),
-                    Tab::Albums => ui.albums_pane.handle_key(enter_key, app),
-                    Tab::Genre => ui.genre_pane.handle_key(enter_key, app),
-                    Tab::Playlists => ui.playlists_pane.handle_key(enter_key, app),
-                    Tab::Search => ui.search_pane.handle_key(enter_key, app),
-                };
-                if let Some(action) = dbl_action {
-                    if matches!(action, AppAction::AddToQueue(_)) {
-                        actions.push(AppAction::FocusPane(FocusedPane::Playlist));
-                    }
-                    actions.push(action);
-                    return actions;
-                }
-            }
-
-            // Single click — route to pane for selection
+            // Single click in library → select + activate (Enter)
             if in_library {
-                let action = match app.tab {
+                // First, route mouse to pane for selection update
+                let _sel_action = match app.tab {
                     Tab::Queue => ui.library_pane.handle_mouse(mouse, areas.library, app),
                     Tab::Directories => ui.dir_browser_pane.handle_mouse(mouse, areas.library, app),
                     Tab::Artists => ui.artists_pane.handle_mouse(mouse, areas.library, app),
@@ -370,8 +349,23 @@ pub fn handle_mouse_event(
                     Tab::Playlists => ui.playlists_pane.handle_mouse(mouse, areas.library, app),
                     Tab::Search => ui.search_pane.handle_mouse(mouse, areas.library, app),
                 };
-                if let Some(a) = action {
-                    actions.push(a);
+                // Then, trigger Enter action to activate the clicked item
+                let enter_key = KeyEvent::new(KeyCode::Enter, KeyModifiers::NONE);
+                let activate_action = match app.tab {
+                    Tab::Queue => ui.library_pane.handle_key(enter_key, app),
+                    Tab::Directories => ui.dir_browser_pane.handle_key(enter_key, app),
+                    Tab::Artists => ui.artists_pane.handle_key(enter_key, app),
+                    Tab::AlbumArtists => ui.album_artists_pane.handle_key(enter_key, app),
+                    Tab::Albums => ui.albums_pane.handle_key(enter_key, app),
+                    Tab::Genre => ui.genre_pane.handle_key(enter_key, app),
+                    Tab::Playlists => ui.playlists_pane.handle_key(enter_key, app),
+                    Tab::Search => ui.search_pane.handle_key(enter_key, app),
+                };
+                if let Some(action) = activate_action {
+                    if matches!(action, AppAction::AddToQueue(_)) {
+                        actions.push(AppAction::FocusPane(FocusedPane::Playlist));
+                    }
+                    actions.push(action);
                 }
             } else if in_playlist {
                 if let Some(a) = ui.queue_pane.handle_mouse(mouse, areas.playlist, app) {

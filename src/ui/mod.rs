@@ -69,7 +69,7 @@ impl Ui {
             last_click: None,
             mouse_pos: None,
             hovered_tab: None,
-            pane_widths: [30, 35, 35],
+            pane_widths: [20, 60, 20],
             resize_mode: false,
             dragging_border: None,
         }

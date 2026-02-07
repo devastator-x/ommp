@@ -97,13 +97,14 @@ impl Pane for QueuePane {
             }
         }
 
-        // Column layout: prefix(2) + title(flex) + gap(1) + ext(4) + gap(1) + dur(5) + trail(1)
-        // Minimum: 2 + 1 + 1 + 4 + 1 + 5 + 1 = 15
+        // Column layout: prefix(2) + title(55%) + artist(45%) + ext(4) + gap(1) + dur(5) + trail(1)
         let ext_col_width = 4;
         let dur_col_width = 5;
         let prefix_width = 2;
-        let meta_width = 1 + ext_col_width + 1 + dur_col_width + 1; // gap+ext+gap+dur+trail
-        let title_max = inner_width.saturating_sub(prefix_width + meta_width);
+        let fixed_width = prefix_width + 1 + ext_col_width + 1 + dur_col_width + 1;
+        let flex_total = inner_width.saturating_sub(fixed_width);
+        let title_max = (flex_total * 55 / 100).max(4);
+        let artist_max = flex_total.saturating_sub(title_max).max(4);
         let has_scrollbar = count > inner_height;
 
         let items: Vec<ListItem> = app
@@ -118,6 +119,7 @@ impl Pane for QueuePane {
                 let is_current = app.queue.current_index == Some(i);
                 let is_selected = i == app.queue.selected_index;
 
+                let artist = track.display_artist();
                 let ext = track
                     .path
                     .extension()
@@ -133,37 +135,43 @@ impl Pane for QueuePane {
                     .add_modifier(Modifier::BOLD);
                 let cur_style = theme.current_track_style;
                 let normal_style = Style::default().fg(theme.fg);
+                let dim_style = Style::default().fg(Color::Gray);
 
                 let is_hovered = self.hover_row == Some(i);
 
-                let (title_style, ext_style, dur_style, prefix_style) = if is_selected && focused {
-                    (sel_style, sel_style, sel_style, sel_style)
-                } else if is_current {
-                    let bg = if is_hovered { HOVER_BG } else { Color::Reset };
-                    (
-                        cur_style.bg(bg),
-                        Style::default().fg(format_color(&ext)).add_modifier(Modifier::BOLD).bg(bg),
-                        Style::default().fg(Color::DarkGray).bg(bg),
-                        cur_style.bg(bg),
-                    )
-                } else if is_hovered {
-                    (
-                        normal_style.bg(HOVER_BG),
-                        Style::default().fg(format_color(&ext)).bg(HOVER_BG),
-                        Style::default().fg(Color::DarkGray).bg(HOVER_BG),
-                        normal_style.bg(HOVER_BG),
-                    )
-                } else {
-                    (
-                        normal_style,
-                        Style::default().fg(format_color(&ext)),
-                        Style::default().fg(Color::DarkGray),
-                        normal_style,
-                    )
-                };
+                let (title_style, artist_style, ext_style, dur_style, prefix_style) =
+                    if is_selected && focused {
+                        (sel_style, sel_style, sel_style, sel_style, sel_style)
+                    } else if is_current {
+                        let bg = if is_hovered { HOVER_BG } else { Color::Reset };
+                        (
+                            cur_style.bg(bg),
+                            dim_style.bg(bg),
+                            Style::default().fg(format_color(&ext)).add_modifier(Modifier::BOLD).bg(bg),
+                            Style::default().fg(Color::DarkGray).bg(bg),
+                            cur_style.bg(bg),
+                        )
+                    } else if is_hovered {
+                        (
+                            normal_style.bg(HOVER_BG),
+                            dim_style.bg(HOVER_BG),
+                            Style::default().fg(format_color(&ext)).bg(HOVER_BG),
+                            Style::default().fg(Color::DarkGray).bg(HOVER_BG),
+                            normal_style.bg(HOVER_BG),
+                        )
+                    } else {
+                        (
+                            normal_style,
+                            dim_style,
+                            Style::default().fg(format_color(&ext)),
+                            Style::default().fg(Color::DarkGray),
+                            normal_style,
+                        )
+                    };
 
                 let prefix = if is_current { "\u{25B6} " } else { "  " }; // ▶
                 let title_fitted = fit_to_width(&track.title, title_max);
+                let artist_fitted = fit_to_width(artist, artist_max);
 
                 // Right-align ext to ext_col_width
                 let ext_padded = format!("{:>width$}", ext, width = ext_col_width);
@@ -173,6 +181,7 @@ impl Pane for QueuePane {
                 ListItem::new(Line::from(vec![
                     Span::styled(prefix, prefix_style),
                     Span::styled(title_fitted, title_style),
+                    Span::styled(artist_fitted, artist_style),
                     Span::styled(" ", Style::default()),
                     Span::styled(ext_padded, ext_style),
                     Span::styled(" ", Style::default()),

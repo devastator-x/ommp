@@ -100,6 +100,9 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
                         match handle.join() {
                             Ok(lib) => {
                                 app.library = lib;
+                                // Load all tracks into queue by default
+                                let all_indices: Vec<usize> = (0..app.library.tracks.len()).collect();
+                                app.handle_action(app::AppAction::AddToQueue(all_indices));
                                 ui.refresh_dir_browser(&app);
                                 scan_done = true;
                             }
