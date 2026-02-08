@@ -1,6 +1,7 @@
 pub mod input;
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum Event {
     Key(crossterm::event::KeyEvent),
     Mouse(crossterm::event::MouseEvent),
@@ -11,6 +12,7 @@ pub enum Event {
 }
 
 #[derive(Debug, Clone)]
+#[allow(dead_code)]
 pub enum AudioEvent {
     PositionUpdate { position_secs: f64, duration_secs: f64 },
     TrackFinished,

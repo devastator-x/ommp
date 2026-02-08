@@ -14,6 +14,7 @@ pub struct Track {
     pub track_number: Option<u32>,
     pub duration: Duration,
     pub bitrate: Option<u32>,
+    #[allow(dead_code)]
     pub lyrics: Option<String>,
 }
 

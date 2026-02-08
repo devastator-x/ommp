@@ -17,7 +17,6 @@ pub enum AppAction {
     Quit,
     PlayTrack(usize),
     PauseResume,
-    Stop,
     NextTrack,
     PrevTrack,
     SetVolume(f32),
@@ -39,9 +38,6 @@ pub enum AppAction {
     UpdatePosition { position_secs: f64, duration_secs: f64 },
     TrackFinished,
     SetQueueSelection(usize),
-    SearchQuery(String),
-    EnterSearchMode,
-    ExitSearchMode,
     AddToPlaylist { playlist_idx: usize, track_idx: usize },
     RemoveFromPlaylist { playlist_idx: usize, track_idx: usize },
     CreatePlaylist(String),
@@ -142,13 +138,6 @@ impl App {
                     }
                 }
             },
-            AppAction::Stop => {
-                if let Some(ref engine) = self.audio_engine {
-                    engine.send(PlayerCommand::Stop);
-                }
-                self.playback.state = PlayState::Stopped;
-                self.playback.position_secs = 0.0;
-            }
             AppAction::NextTrack => {
                 self.play_next();
             }
@@ -248,16 +237,6 @@ impl App {
                 if idx < self.queue.tracks.len() {
                     self.queue.selected_index = idx;
                 }
-            }
-            AppAction::SearchQuery(query) => {
-                self.search_results = self.library.search(&query);
-                self.search_query = query;
-            }
-            AppAction::EnterSearchMode => {
-                self.search_mode = true;
-            }
-            AppAction::ExitSearchMode => {
-                self.search_mode = false;
             }
             AppAction::AddToPlaylist { playlist_idx, track_idx } => {
                 if let Some(pl) = self.playlists.get_mut(playlist_idx) {

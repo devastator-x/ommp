@@ -59,16 +59,18 @@ pub enum Tab {
     Artists,
     Albums,
     Genre,
+    Format,
     Playlists,
 }
 
 impl Tab {
-    pub const ALL: [Tab; 6] = [
+    pub const ALL: [Tab; 7] = [
         Tab::Queue,
         Tab::Directories,
         Tab::Artists,
         Tab::Albums,
         Tab::Genre,
+        Tab::Format,
         Tab::Playlists,
     ];
 
@@ -79,6 +81,7 @@ impl Tab {
             Tab::Artists => "Artists",
             Tab::Albums => "Albums",
             Tab::Genre => "Genre",
+            Tab::Format => "Format",
             Tab::Playlists => "Playlists",
         }
     }

@@ -333,7 +333,6 @@ pub fn render_track_info(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
 
     let duration_str = track.format_duration();
 
-    let path_str = track.path.to_string_lossy().to_string();
 
     // Each field has a unique label color and value style
     let fields: Vec<(&str, String, Color, Style)> = vec![
@@ -366,9 +365,6 @@ pub fn render_track_info(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
         ("Format", format_ext,
             Color::Rgb(255, 220, 100),
             Style::default().fg(theme.fg)),
-        ("Path", path_str,
-            Color::Indexed(245),
-            Style::default().fg(Color::Indexed(250))),
     ];
 
     let lines: Vec<Line> = fields

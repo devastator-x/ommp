@@ -40,6 +40,7 @@ impl Library {
         result
     }
 
+    #[allow(dead_code)]
     pub fn get_album_artists(&self) -> Vec<String> {
         let mut set = BTreeSet::new();
         for t in &self.tracks {
@@ -90,6 +91,7 @@ impl Library {
             .collect()
     }
 
+    #[allow(dead_code)]
     pub fn get_tracks_by_album_artist(&self, album_artist: &str) -> Vec<usize> {
         self.tracks
             .iter()
@@ -117,6 +119,7 @@ impl Library {
             .collect()
     }
 
+    #[allow(dead_code)]
     pub fn get_albums_by_album_artist(&self, album_artist: &str) -> Vec<String> {
         let mut set = BTreeSet::new();
         for t in &self.tracks {
@@ -125,6 +128,32 @@ impl Library {
             }
         }
         set.into_iter().collect()
+    }
+
+    pub fn get_formats(&self) -> Vec<String> {
+        let mut set = BTreeSet::new();
+        for t in &self.tracks {
+            let ext = t.path.extension()
+                .map(|e| e.to_string_lossy().to_lowercase())
+                .unwrap_or_default();
+            if !ext.is_empty() {
+                set.insert(ext);
+            }
+        }
+        set.into_iter().collect()
+    }
+
+    pub fn get_tracks_by_format(&self, format: &str) -> Vec<usize> {
+        self.tracks
+            .iter()
+            .enumerate()
+            .filter(|(_, t)| {
+                t.path.extension()
+                    .map(|e| e.to_string_lossy().to_lowercase() == format)
+                    .unwrap_or(false)
+            })
+            .map(|(i, _)| i)
+            .collect()
     }
 
     pub fn get_directory_entries(&self, dir: &Path) -> (Vec<String>, Vec<usize>) {

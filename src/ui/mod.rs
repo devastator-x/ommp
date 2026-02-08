@@ -17,6 +17,7 @@ use pane::Pane;
 use panes::albums_pane::AlbumsPane;
 use panes::artists_pane::ArtistsPane;
 use panes::dir_browser_pane::DirBrowserPane;
+use panes::format_pane::FormatPane;
 use panes::genre_pane::GenrePane;
 use panes::library_pane::LibraryPane;
 use panes::lyrics_pane::LyricsPane;
@@ -36,6 +37,7 @@ pub struct Ui {
     pub artists_pane: ArtistsPane,
     pub albums_pane: AlbumsPane,
     pub genre_pane: GenrePane,
+    pub format_pane: FormatPane,
     pub playlists_pane: PlaylistsPane,
     pub lyrics_pane: LyricsPane,
     pub last_click: Option<(std::time::Instant, u16, u16)>,
@@ -97,6 +99,7 @@ impl Ui {
             artists_pane: ArtistsPane::new(),
             albums_pane: AlbumsPane::new(),
             genre_pane: GenrePane::new(),
+            format_pane: FormatPane::new(),
             playlists_pane: PlaylistsPane::new(),
             lyrics_pane: LyricsPane::new(),
             last_click: None,
@@ -143,6 +146,7 @@ impl Ui {
             Tab::Artists => self.artists_pane.render(frame, areas.library, lib_focused, app, &self.theme),
             Tab::Albums => self.albums_pane.render(frame, areas.library, lib_focused, app, &self.theme),
             Tab::Genre => self.genre_pane.render(frame, areas.library, lib_focused, app, &self.theme),
+            Tab::Format => self.format_pane.render(frame, areas.library, lib_focused, app, &self.theme),
             Tab::Playlists => self.playlists_pane.render(frame, areas.library, lib_focused, app, &self.theme),
         }
 
@@ -241,6 +245,15 @@ impl Ui {
         } else {
             self.genre_pane.selected = self.genre_pane.selected.min(genres_len - 1);
             self.genre_pane.scroll_offset = self.genre_pane.scroll_offset.min(genres_len - 1);
+        }
+
+        let formats_len = app.library.get_formats().len();
+        if formats_len == 0 {
+            self.format_pane.selected = 0;
+            self.format_pane.scroll_offset = 0;
+        } else {
+            self.format_pane.selected = self.format_pane.selected.min(formats_len - 1);
+            self.format_pane.scroll_offset = self.format_pane.scroll_offset.min(formats_len - 1);
         }
 
         let playlists_len = app.playlists.len();

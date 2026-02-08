@@ -21,7 +21,7 @@ const KEYBINDINGS: &[(&str, &str)] = &[
     ("r", "Cycle repeat mode"),
     ("b", "Add to playlist"),
     ("", ""),
-    ("1-6", "Switch tab"),
+    ("1-7", "Switch tab"),
     ("Tab / Shift+Tab", "Cycle pane focus"),
     ("j / k", "Navigate list"),
     ("g / G", "Jump to first / last"),

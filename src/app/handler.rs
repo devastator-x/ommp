@@ -358,6 +358,10 @@ pub fn handle_key_event(key: KeyEvent, app: &App, ui: &mut Ui) -> Vec<AppAction>
             return actions;
         }
         (_, KeyCode::Char('6')) => {
+            actions.push(AppAction::SwitchTab(Tab::Format));
+            return actions;
+        }
+        (_, KeyCode::Char('7')) => {
             actions.push(AppAction::SwitchTab(Tab::Playlists));
             return actions;
         }
@@ -381,6 +385,7 @@ pub fn handle_key_event(key: KeyEvent, app: &App, ui: &mut Ui) -> Vec<AppAction>
             Tab::Artists => ui.artists_pane.handle_key(key, app),
             Tab::Albums => ui.albums_pane.handle_key(key, app),
             Tab::Genre => ui.genre_pane.handle_key(key, app),
+            Tab::Format => ui.format_pane.handle_key(key, app),
             Tab::Playlists => ui.playlists_pane.handle_key(key, app),
         },
         FocusedPane::Playlist => {
@@ -660,6 +665,7 @@ pub fn handle_mouse_event(
                     Tab::Artists => ui.artists_pane.handle_mouse(mouse, areas.library, app),
                     Tab::Albums => ui.albums_pane.handle_mouse(mouse, areas.library, app),
                     Tab::Genre => ui.genre_pane.handle_mouse(mouse, areas.library, app),
+                    Tab::Format => ui.format_pane.handle_mouse(mouse, areas.library, app),
                     Tab::Playlists => ui.playlists_pane.handle_mouse(mouse, areas.library, app),
                 };
                 // Then, trigger Enter action to activate the clicked item
@@ -670,6 +676,7 @@ pub fn handle_mouse_event(
                     Tab::Artists => ui.artists_pane.handle_key(enter_key, app),
                     Tab::Albums => ui.albums_pane.handle_key(enter_key, app),
                     Tab::Genre => ui.genre_pane.handle_key(enter_key, app),
+                    Tab::Format => ui.format_pane.handle_key(enter_key, app),
                     Tab::Playlists => ui.playlists_pane.handle_key(enter_key, app),
                 };
                 if let Some(action) = activate_action {
@@ -706,6 +713,7 @@ pub fn handle_mouse_event(
                     Tab::Artists => ui.artists_pane.handle_mouse(mouse, areas.library, app),
                     Tab::Albums => ui.albums_pane.handle_mouse(mouse, areas.library, app),
                     Tab::Genre => ui.genre_pane.handle_mouse(mouse, areas.library, app),
+                    Tab::Format => ui.format_pane.handle_mouse(mouse, areas.library, app),
                     Tab::Playlists => ui.playlists_pane.handle_mouse(mouse, areas.library, app),
                 };
                 if let Some(a) = action {
@@ -737,6 +745,7 @@ fn clear_all_hovers(ui: &mut Ui) {
     ui.artists_pane.hover_row = None;
     ui.albums_pane.hover_row = None;
     ui.genre_pane.hover_row = None;
+    ui.format_pane.hover_row = None;
     ui.playlists_pane.hover_row = None;
 }
 
@@ -792,6 +801,10 @@ fn update_hover(
                 Tab::Genre => {
                     let row = ui.genre_pane.scroll_offset + visual_row;
                     ui.genre_pane.hover_row = Some(row);
+                }
+                Tab::Format => {
+                    let row = ui.format_pane.scroll_offset + visual_row;
+                    ui.format_pane.hover_row = Some(row);
                 }
                 Tab::Playlists => {
                     let row = ui.playlists_pane.scroll_offset + visual_row;
