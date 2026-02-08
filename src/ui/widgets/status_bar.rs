@@ -49,6 +49,12 @@ pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
         .map(|b| format!(" ({}kbps)", b))
         .unwrap_or_default();
 
+    let state_color = match app.playback.state {
+        PlayState::Playing => Color::Rgb(80, 255, 120),   // bright green
+        PlayState::Paused => Color::Rgb(255, 200, 80),    // amber
+        PlayState::Stopped => Color::Rgb(255, 100, 100),  // soft red
+    };
+
     let left_line1 = Line::from(vec![
         Span::styled(
             format!(" {} {}", state_icon, match app.playback.state {
@@ -56,7 +62,7 @@ pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
                 PlayState::Paused => "Paused",
                 PlayState::Stopped => "Stopped",
             }),
-            Style::default().fg(theme.playing_indicator).add_modifier(Modifier::BOLD),
+            Style::default().fg(state_color).add_modifier(Modifier::BOLD),
         ),
     ]);
 
@@ -82,12 +88,12 @@ pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
 
     let center_line1 = Line::from(Span::styled(
         title,
-        theme.title_style,
+        Style::default().fg(Color::Rgb(100, 220, 255)).add_modifier(Modifier::BOLD),
     )).alignment(Alignment::Center);
 
     let center_line2 = Line::from(Span::styled(
         artist_album,
-        theme.artist_style,
+        Style::default().fg(Color::Rgb(200, 170, 255)),
     )).alignment(Alignment::Center);
 
     let center = Paragraph::new(vec![center_line1, center_line2]);
@@ -97,24 +103,34 @@ pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
     let vol_pct = (app.playback.volume * 100.0) as u8;
 
     let shuffle_style = if app.playback.shuffle {
-        Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)
+        Style::default().fg(Color::Rgb(100, 220, 255)).add_modifier(Modifier::BOLD)
     } else {
         Style::default().fg(Color::DarkGray)
     };
 
     let repeat_style = match app.playback.repeat {
         crate::app::state::RepeatMode::Off => Style::default().fg(Color::DarkGray),
-        crate::app::state::RepeatMode::All => Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD),
-        crate::app::state::RepeatMode::One => Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD),
+        crate::app::state::RepeatMode::All => Style::default().fg(Color::Rgb(120, 255, 180)).add_modifier(Modifier::BOLD),
+        crate::app::state::RepeatMode::One => Style::default().fg(Color::Rgb(255, 220, 100)).add_modifier(Modifier::BOLD),
     };
 
-    // Volume staircase: ▁▂▃▄▅▆▇█
+    // Volume staircase with gradient: green → yellow → orange → red
     const STEPS: [char; 8] = ['▁', '▂', '▃', '▄', '▅', '▆', '▇', '█'];
+    let vol_colors: [Color; 8] = [
+        Color::Rgb(80, 200, 120),  // green
+        Color::Rgb(120, 220, 100), // green-yellow
+        Color::Rgb(180, 230, 80),  // yellow-green
+        Color::Rgb(230, 220, 60),  // yellow
+        Color::Rgb(255, 190, 50),  // amber
+        Color::Rgb(255, 150, 40),  // orange
+        Color::Rgb(255, 110, 50),  // red-orange
+        Color::Rgb(255, 70, 70),   // red
+    ];
     let filled = (vol_pct as u16 * 8 / 100).min(8) as usize;
     let mut vol_spans = Vec::with_capacity(10);
     for (i, &ch) in STEPS.iter().enumerate() {
         let style = if i < filled {
-            Style::default().fg(Color::Cyan).add_modifier(Modifier::BOLD)
+            Style::default().fg(vol_colors[i]).add_modifier(Modifier::BOLD)
         } else {
             Style::default().fg(Color::Indexed(238))
         };

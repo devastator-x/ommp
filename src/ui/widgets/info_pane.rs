@@ -160,7 +160,7 @@ const DIGIT_PATTERNS: [&[&str]; 11] = [
     &["    ", " ██ ", "    ", " ██ ", "    "],
 ];
 
-fn render_clock(frame: &mut Frame, area: Rect, theme: &Theme) {
+fn render_clock(frame: &mut Frame, area: Rect, _theme: &Theme) {
     if area.width < 4 || area.height < 5 {
         return;
     }
@@ -202,7 +202,14 @@ fn render_clock(frame: &mut Frame, area: Rect, theme: &Theme) {
         0
     };
 
-    let style = Style::default().fg(theme.highlight_bg);
+    // Gradient colors per digit: sky blue → cyan → mint → purple → pink
+    let digit_colors: [Color; 5] = [
+        Color::Rgb(100, 180, 255), // sky blue
+        Color::Rgb(80, 220, 255),  // cyan
+        Color::Rgb(200, 200, 200), // colon: white-gray
+        Color::Rgb(200, 130, 255), // purple
+        Color::Rgb(255, 130, 200), // pink
+    ];
 
     for row in 0..5u16 {
         let y = area.y + y_offset + row;
@@ -211,6 +218,7 @@ fn render_clock(frame: &mut Frame, area: Rect, theme: &Theme) {
         }
         let mut x = area.x + x_offset;
         for (i, &digit_idx) in digits.iter().enumerate() {
+            let style = Style::default().fg(digit_colors[i % digit_colors.len()]);
             let pattern = DIGIT_PATTERNS[digit_idx][row as usize];
             for ch in pattern.chars() {
                 if x >= area.x + area.width {
@@ -306,10 +314,6 @@ pub fn render_track_info(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
         }
     };
 
-    let label_style = Style::default().fg(Color::DarkGray);
-    let value_style = Style::default().fg(theme.fg);
-    let title_style = Style::default().fg(theme.highlight_bg).add_modifier(Modifier::BOLD);
-
     let format_ext = track
         .path
         .extension()
@@ -331,24 +335,47 @@ pub fn render_track_info(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
 
     let path_str = track.path.to_string_lossy().to_string();
 
-    let fields: Vec<(&str, String, Style)> = vec![
-        ("Title", track.title.clone(), title_style),
-        ("Artist", track.display_artist().to_string(), value_style),
-        ("Album", track.display_album().to_string(), value_style),
-        ("Album Artist", if track.album_artist.is_empty() { "N/A".to_string() } else { track.album_artist.clone() }, value_style),
-        ("Genre", if track.genre.is_empty() { "N/A".to_string() } else { track.genre.clone() }, value_style),
-        ("Track #", track_num_str, value_style),
-        ("Duration", duration_str, value_style),
-        ("Bitrate", bitrate_str, value_style),
-        ("Format", format_ext, value_style),
-        ("Path", path_str, value_style),
+    // Each field has a unique label color and value style
+    let fields: Vec<(&str, String, Color, Style)> = vec![
+        ("Title", track.title.clone(),
+            Color::Rgb(100, 180, 255),
+            Style::default().fg(Color::Rgb(100, 220, 255)).add_modifier(Modifier::BOLD)),
+        ("Artist", track.display_artist().to_string(),
+            Color::Rgb(255, 180, 100),
+            Style::default().fg(Color::Rgb(255, 210, 140))),
+        ("Album", track.display_album().to_string(),
+            Color::Rgb(200, 130, 255),
+            Style::default().fg(Color::Rgb(220, 170, 255))),
+        ("Album Artist",
+            if track.album_artist.is_empty() { "N/A".to_string() } else { track.album_artist.clone() },
+            Color::Rgb(200, 130, 255),
+            Style::default().fg(theme.fg)),
+        ("Genre",
+            if track.genre.is_empty() { "N/A".to_string() } else { track.genre.clone() },
+            Color::Rgb(255, 120, 150),
+            Style::default().fg(Color::Rgb(255, 170, 190))),
+        ("Track #", track_num_str,
+            Color::Rgb(120, 220, 180),
+            Style::default().fg(theme.fg)),
+        ("Duration", duration_str,
+            Color::Rgb(120, 220, 180),
+            Style::default().fg(theme.fg)),
+        ("Bitrate", bitrate_str,
+            Color::Rgb(255, 220, 100),
+            Style::default().fg(theme.fg)),
+        ("Format", format_ext,
+            Color::Rgb(255, 220, 100),
+            Style::default().fg(theme.fg)),
+        ("Path", path_str,
+            Color::Indexed(245),
+            Style::default().fg(Color::Indexed(250))),
     ];
 
     let lines: Vec<Line> = fields
         .iter()
-        .map(|(label, value, val_style)| {
+        .map(|(label, value, label_color, val_style)| {
             Line::from(vec![
-                Span::styled(format!("{:>13}: ", label), label_style),
+                Span::styled(format!("{:>13}: ", label), Style::default().fg(*label_color)),
                 Span::styled(value.as_str(), *val_style),
             ])
         })

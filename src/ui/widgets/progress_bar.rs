@@ -31,9 +31,14 @@ pub fn render_progress_bar(frame: &mut Frame, area: Rect, app: &App, theme: &The
         PlayState::Paused => "\u{F04C}",   // nf-fa-pause
         PlayState::Stopped => "\u{F04D}",  // nf-fa-stop
     };
+    let icon_color = match app.playback.state {
+        PlayState::Playing => Color::Rgb(80, 255, 120),
+        PlayState::Paused => Color::Rgb(255, 200, 80),
+        PlayState::Stopped => Color::Rgb(255, 100, 100),
+    };
     let icon_widget = Paragraph::new(Line::from(Span::styled(
         format!(" {}", icon),
-        Style::default().fg(theme.playing_indicator),
+        Style::default().fg(icon_color),
     )));
     frame.render_widget(icon_widget, cols[0]);
 

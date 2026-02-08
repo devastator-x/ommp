@@ -25,7 +25,7 @@ impl Default for Theme {
             bg: Color::Reset,
             fg: Color::White,
             border_focused: Color::Cyan,
-            border_unfocused: Color::DarkGray,
+            border_unfocused: Color::Cyan,
             highlight_bg: Color::Cyan,
             highlight_fg: Color::Black,
             tab_active: Style::default()
@@ -33,16 +33,16 @@ impl Default for Theme {
                 .add_modifier(Modifier::BOLD),
             tab_inactive: Style::default().fg(Color::DarkGray),
             status_bar_bg: Color::DarkGray,
-            progress_filled: Color::Cyan,
-            progress_empty: Color::DarkGray,
-            playing_indicator: Color::Green,
+            progress_filled: Color::Rgb(200, 80, 255),
+            progress_empty: Color::Indexed(236),
+            playing_indicator: Color::Rgb(80, 255, 120),
             title_style: Style::default()
                 .fg(Color::White)
                 .add_modifier(Modifier::BOLD),
             artist_style: Style::default().fg(Color::Gray),
             dim_style: Style::default().fg(Color::DarkGray),
             current_track_style: Style::default()
-                .fg(Color::Cyan)
+                .fg(Color::Rgb(100, 220, 255))
                 .add_modifier(Modifier::BOLD),
         }
     }
