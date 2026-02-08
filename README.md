@@ -1,8 +1,6 @@
 # OMMP - Oh My Music Player
 
-A terminal-based music player built with Rust. Plays FLAC, MP3, M4A, OGG, and WAV files directly from your `~/Music` directory.
-
-Inspired by [rmpc](https://github.com/mierak/rmpc), but fully standalone — no MPD required.
+A terminal-based music player built with Rust. Plays FLAC, MP3, M4A, OGG, and WAV files directly from your `~/Music` directory. Fully standalone — no MPD or external daemon required.
 
 ## Features
 
