@@ -5,7 +5,7 @@ use ratatui::widgets::{Block, Borders, Paragraph};
 use ratatui::Frame;
 
 use crate::app::App;
-use crate::app::state::PlayState;
+use crate::app::state::{PlayState, SyncState};
 use crate::ui::theme::Theme;
 
 pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme, resize_mode: bool) {
@@ -15,6 +15,12 @@ pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
             .border_style(Style::default().fg(Color::Yellow))
             .title(" [RESIZE] ")
             .title_style(Style::default().fg(Color::Yellow).add_modifier(Modifier::BOLD))
+    } else if app.sync_state == SyncState::Scanning {
+        Block::default()
+            .borders(Borders::ALL)
+            .border_style(Style::default().fg(Color::Rgb(255, 200, 80)))
+            .title(" [SYNCING] ")
+            .title_style(Style::default().fg(Color::Rgb(255, 200, 80)).add_modifier(Modifier::BOLD))
     } else {
         Block::default()
             .borders(Borders::ALL)

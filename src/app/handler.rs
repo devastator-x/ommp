@@ -221,6 +221,9 @@ pub fn handle_key_event(key: KeyEvent, app: &App, ui: &mut Ui) -> Vec<AppAction>
             KeyCode::Char('i') => {
                 ui.show_about_modal = true;
             }
+            KeyCode::Char('l') => {
+                actions.push(AppAction::LibrarySync);
+            }
             _ => {} // unknown chord, ignore
         }
         return actions;

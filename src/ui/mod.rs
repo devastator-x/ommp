@@ -202,4 +202,56 @@ impl Ui {
     pub fn refresh_dir_browser(&mut self, app: &App) {
         self.dir_browser_pane.refresh(app);
     }
+
+    pub fn clamp_selections(&mut self, app: &App) {
+        let artists_len = app.library.get_artists().len();
+        if artists_len == 0 {
+            self.artists_pane.selected = 0;
+            self.artists_pane.scroll_offset = 0;
+        } else {
+            self.artists_pane.selected = self.artists_pane.selected.min(artists_len - 1);
+            self.artists_pane.scroll_offset = self.artists_pane.scroll_offset.min(artists_len - 1);
+        }
+
+        let albums_len = app.library.get_albums().len();
+        if albums_len == 0 {
+            self.albums_pane.selected = 0;
+            self.albums_pane.scroll_offset = 0;
+        } else {
+            self.albums_pane.selected = self.albums_pane.selected.min(albums_len - 1);
+            self.albums_pane.scroll_offset = self.albums_pane.scroll_offset.min(albums_len - 1);
+        }
+
+        let genres_len = app.library.get_genres().len();
+        if genres_len == 0 {
+            self.genre_pane.selected = 0;
+            self.genre_pane.scroll_offset = 0;
+        } else {
+            self.genre_pane.selected = self.genre_pane.selected.min(genres_len - 1);
+            self.genre_pane.scroll_offset = self.genre_pane.scroll_offset.min(genres_len - 1);
+        }
+
+        let playlists_len = app.playlists.len();
+        if playlists_len == 0 {
+            self.playlists_pane.selected = 0;
+            self.playlists_pane.scroll_offset = 0;
+        } else {
+            self.playlists_pane.selected = self.playlists_pane.selected.min(playlists_len - 1);
+            self.playlists_pane.scroll_offset = self.playlists_pane.scroll_offset.min(playlists_len - 1);
+        }
+
+        // Reset library/dir browser to top since track indices changed
+        self.library_pane.selected = 0;
+        self.library_pane.scroll_offset = 0;
+        self.dir_browser_pane.selected = 0;
+        self.dir_browser_pane.scroll_offset = 0;
+
+        // Clamp queue pane scroll
+        let queue_len = app.queue.tracks.len();
+        if queue_len == 0 {
+            self.queue_pane.scroll_offset = 0;
+        } else {
+            self.queue_pane.scroll_offset = self.queue_pane.scroll_offset.min(queue_len - 1);
+        }
+    }
 }

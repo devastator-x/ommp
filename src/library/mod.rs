@@ -1,10 +1,12 @@
 pub mod scanner;
 pub mod track;
+pub mod watcher;
 
 use std::collections::BTreeSet;
 use std::path::Path;
 use track::Track;
 
+#[derive(Debug)]
 pub struct Library {
     pub tracks: Vec<Track>,
 }

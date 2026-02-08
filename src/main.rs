@@ -77,6 +77,7 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
     // App state
     let mut app = App::new(music_dir.clone());
     app.set_audio_engine(audio_engine);
+    app.set_event_tx(event_tx.clone());
 
     // Scan library in background
     let scan_dir = music_dir.clone();
@@ -85,7 +86,7 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
     });
 
     // UI
-    let mut ui = ui::Ui::new(music_dir, picker);
+    let mut ui = ui::Ui::new(music_dir.clone(), picker);
 
     // Initial render
     terminal.draw(|frame| {
@@ -95,6 +96,7 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
     // Wait for library scan to complete (non-blocking check in event loop)
     let mut scan_done = false;
     let mut scan_join = Some(scan_handle);
+    let mut _watcher: Option<notify::RecommendedWatcher> = None;
 
     loop {
         // Check if library scan is done
@@ -137,9 +139,12 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
                                 }
 
                                 scan_done = true;
+                                app.initial_scan_complete = true;
+                                _watcher = library::watcher::spawn_watcher(&music_dir, event_tx.clone());
                             }
                             Err(_) => {
                                 scan_done = true;
+                                app.initial_scan_complete = true;
                             }
                         }
                     }
@@ -179,6 +184,12 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
                         let size = terminal.size()?;
                         let area = ratatui::layout::Rect::new(0, 0, size.width, size.height);
                         handler::refresh_hover(&app, &mut ui, area)
+                    }
+                    Event::LibraryReady(new_lib) => {
+                        app.replace_library(new_lib);
+                        ui.refresh_dir_browser(&app);
+                        ui.clamp_selections(&app);
+                        vec![]
                     }
                     Event::Audio(audio_event) => {
                         match audio_event {

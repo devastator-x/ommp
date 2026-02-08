@@ -1,4 +1,10 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum SyncState {
+    Idle,
+    Scanning,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum PlayState {
     Playing,
     Paused,

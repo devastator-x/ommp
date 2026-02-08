@@ -19,3 +19,4 @@ serde_json = "1"
 image = { version = "0.25", default-features = false, features = ["jpeg", "png"] }
 libc = "0.2"
 ratatui-image = { version = "4.2.0", default-features = false, features = ["crossterm"] }
+notify = "7"

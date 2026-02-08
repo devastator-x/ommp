@@ -2,9 +2,13 @@ pub mod handler;
 pub mod persist;
 pub mod state;
 
+use std::collections::HashMap;
 use std::path::PathBuf;
 
+use crossbeam_channel::Sender;
+
 use crate::audio::{AudioEngine, PlayerCommand};
+use crate::event::Event;
 use crate::library::Library;
 use state::*;
 
@@ -43,6 +47,7 @@ pub enum AppAction {
     CreatePlaylist(String),
     DeletePlaylist(usize),
     RenamePlaylist { idx: usize, name: String },
+    LibrarySync,
 }
 
 pub struct App {
@@ -58,7 +63,10 @@ pub struct App {
     pub search_results: Vec<usize>,
     pub playlists: Vec<state::Playlist>,
     pub track_just_changed: bool,
+    pub sync_state: SyncState,
+    pub initial_scan_complete: bool,
     audio_engine: Option<AudioEngine>,
+    event_tx: Option<Sender<Event>>,
 }
 
 impl App {
@@ -76,8 +84,15 @@ impl App {
             search_results: Vec::new(),
             playlists: vec![state::Playlist::new("Bookmarks")],
             track_just_changed: false,
+            sync_state: SyncState::Idle,
+            initial_scan_complete: false,
             audio_engine: None,
+            event_tx: None,
         }
+    }
+
+    pub fn set_event_tx(&mut self, tx: Sender<Event>) {
+        self.event_tx = Some(tx);
     }
 
     pub fn set_audio_engine(&mut self, engine: AudioEngine) {
@@ -269,7 +284,78 @@ impl App {
                     pl.name = name;
                 }
             }
+            AppAction::LibrarySync => {
+                if self.sync_state == SyncState::Scanning || !self.initial_scan_complete {
+                    return;
+                }
+                self.sync_state = SyncState::Scanning;
+                if let Some(ref tx) = self.event_tx {
+                    let dir = self.music_dir.clone();
+                    let tx = tx.clone();
+                    std::thread::spawn(move || {
+                        let lib = Library::scan(&dir);
+                        let _ = tx.send(Event::LibraryReady(lib));
+                    });
+                }
+            }
         }
+    }
+
+    pub fn replace_library(&mut self, new_lib: Library) {
+        // Build path→new_index map
+        let path_map: HashMap<PathBuf, usize> = new_lib.tracks.iter().enumerate()
+            .map(|(i, t)| (t.path.clone(), i))
+            .collect();
+
+        // Capture current playing track path
+        let playing_path = self.queue.current_index
+            .and_then(|qi| self.queue.tracks.get(qi))
+            .and_then(|&ti| self.library.tracks.get(ti))
+            .map(|t| t.path.clone());
+
+        // Remap queue tracks
+        let new_queue_tracks: Vec<usize> = self.queue.tracks.iter()
+            .filter_map(|&old_idx| {
+                self.library.tracks.get(old_idx)
+                    .and_then(|t| path_map.get(&t.path))
+                    .copied()
+            })
+            .collect();
+
+        // Remap current_index: find playing track in new queue
+        let new_current = playing_path.and_then(|pp| {
+            path_map.get(&pp).and_then(|&new_ti| {
+                new_queue_tracks.iter().position(|&idx| idx == new_ti)
+            })
+        });
+
+        self.queue.tracks = new_queue_tracks;
+        self.queue.current_index = new_current;
+        self.queue.selected_index = self.queue.selected_index.min(
+            self.queue.tracks.len().saturating_sub(1)
+        );
+        self.queue.scroll_offset = self.queue.scroll_offset.min(
+            self.queue.tracks.len().saturating_sub(1)
+        );
+
+        // Remap playlists
+        for pl in &mut self.playlists {
+            pl.tracks = pl.tracks.iter()
+                .filter_map(|&old_idx| {
+                    self.library.tracks.get(old_idx)
+                        .and_then(|t| path_map.get(&t.path))
+                        .copied()
+                })
+                .collect();
+        }
+
+        // Remap search results
+        if !self.search_query.is_empty() {
+            self.search_results = new_lib.search(&self.search_query);
+        }
+
+        self.library = new_lib;
+        self.sync_state = SyncState::Idle;
     }
 
     fn play_next(&mut self) {
