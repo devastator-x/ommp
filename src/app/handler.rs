@@ -181,6 +181,10 @@ pub fn handle_key_event(key: KeyEvent, app: &App, ui: &mut Ui) -> Vec<AppAction>
                     && ui.search_modal_selected < ui.search_modal_results.len() - 1
                 {
                     ui.search_modal_selected += 1;
+                    let h = ui.search_modal_result_height;
+                    if h > 0 && ui.search_modal_selected >= ui.search_modal_scroll + h {
+                        ui.search_modal_scroll = ui.search_modal_selected - h + 1;
+                    }
                 }
             }
             KeyCode::Backspace => {
@@ -418,8 +422,74 @@ pub fn handle_mouse_event(
     // Store mouse position for hover tracking across all event types
     ui.mouse_pos = Some((x, y));
 
-    // Block all mouse events when any modal is open
-    if ui.show_about_modal || ui.show_help_modal || ui.show_search_modal || ui.show_playlist_modal {
+    // Search modal mouse handling
+    if ui.show_search_modal {
+        let ra = ui.search_modal_result_area;
+        let in_results = x >= ra.x && x < ra.x + ra.width
+            && y >= ra.y && y < ra.y + ra.height;
+
+        // Hover tracking
+        if in_results && !ui.search_modal_results.is_empty() {
+            let row = ui.search_modal_scroll + (y - ra.y) as usize;
+            if row < ui.search_modal_results.len() {
+                ui.search_modal_hover_row = Some(row);
+            } else {
+                ui.search_modal_hover_row = None;
+            }
+        } else {
+            ui.search_modal_hover_row = None;
+        }
+
+        match mouse.kind {
+            MouseEventKind::Down(MouseButton::Left) => {
+                if in_results && !ui.search_modal_results.is_empty() {
+                    let clicked = ui.search_modal_scroll + (y - ra.y) as usize;
+                    if clicked < ui.search_modal_results.len() {
+                        // Double-click detection
+                        let is_double = if let Some((last_time, _lx, ly)) = ui.last_click {
+                            last_time.elapsed() < Duration::from_millis(400) && ly == y
+                        } else {
+                            false
+                        };
+                        ui.last_click = Some((Instant::now(), x, y));
+
+                        if is_double {
+                            // Double-click: select and confirm (add to queue)
+                            let track_idx = ui.search_modal_results[clicked];
+                            actions.push(AppAction::AddToQueue(vec![track_idx]));
+                            ui.show_search_modal = false;
+                            ui.search_modal_input.clear();
+                            ui.search_modal_results.clear();
+                            ui.search_modal_selected = 0;
+                            ui.search_modal_scroll = 0;
+                        } else {
+                            // Single click: select
+                            ui.search_modal_selected = clicked;
+                        }
+                    }
+                }
+            }
+            MouseEventKind::ScrollDown => {
+                if in_results && !ui.search_modal_results.is_empty() {
+                    let max_scroll = ui.search_modal_results.len()
+                        .saturating_sub(ui.search_modal_result_height);
+                    if ui.search_modal_scroll < max_scroll {
+                        ui.search_modal_scroll += 1;
+                    }
+                }
+            }
+            MouseEventKind::ScrollUp => {
+                if in_results && ui.search_modal_scroll > 0 {
+                    ui.search_modal_scroll -= 1;
+                }
+            }
+            _ => {}
+        }
+        return actions;
+    }
+
+    // Block all mouse events when any other modal is open
+    if ui.show_about_modal || ui.show_help_modal || ui.show_playlist_modal {
         return actions;
     }
 

@@ -1,11 +1,13 @@
 use ratatui::layout::{Constraint, Direction, Layout, Rect};
 use ratatui::style::{Color, Modifier, Style};
 use ratatui::text::{Line, Span};
-use ratatui::widgets::{Block, Borders, Clear, List, ListItem, Paragraph};
+use ratatui::widgets::{Block, Borders, Clear, List, ListItem, Paragraph, Scrollbar, ScrollbarOrientation, ScrollbarState};
 use ratatui::Frame;
 
 use crate::app::App;
 use crate::ui::theme::Theme;
+
+const HOVER_BG: Color = Color::Indexed(238);
 
 pub fn render_search_modal(
     frame: &mut Frame,
@@ -14,9 +16,10 @@ pub fn render_search_modal(
     results: &[usize],
     selected: usize,
     scroll: usize,
+    hover_row: Option<usize>,
     app: &App,
     theme: &Theme,
-) {
+) -> (usize, Rect) {
     let modal = centered_rect(50, 60, area);
 
     frame.render_widget(Clear, modal);
@@ -81,6 +84,7 @@ pub fn render_search_modal(
             .map(|(i, &track_idx)| {
                 let track = &app.library.tracks[track_idx];
                 let is_selected = i == selected;
+                let is_hovered = hover_row == Some(i);
 
                 let artist = track.display_artist();
                 let title_w = (result_width * 55 / 100).max(4);
@@ -89,18 +93,22 @@ pub fn render_search_modal(
                 let title_fitted = fit_to_width(&track.title, title_w);
                 let artist_fitted = fit_to_width(artist, artist_w);
 
-                let style = if is_selected {
-                    Style::default()
+                let (style, artist_style) = if is_selected {
+                    let s = Style::default()
                         .bg(theme.highlight_bg)
                         .fg(theme.highlight_fg)
-                        .add_modifier(Modifier::BOLD)
+                        .add_modifier(Modifier::BOLD);
+                    (s, s)
+                } else if is_hovered {
+                    (
+                        Style::default().fg(theme.fg).bg(HOVER_BG),
+                        Style::default().fg(Color::Gray).bg(HOVER_BG),
+                    )
                 } else {
-                    Style::default().fg(theme.fg)
-                };
-                let artist_style = if is_selected {
-                    style
-                } else {
-                    Style::default().fg(Color::Gray)
+                    (
+                        Style::default().fg(theme.fg),
+                        Style::default().fg(Color::Gray),
+                    )
                 };
 
                 let prefix = if is_selected { " > " } else { "   " };
@@ -122,7 +130,23 @@ pub fn render_search_modal(
                 )))
         );
         frame.render_widget(list, chunks[2]);
+
+        // Scrollbar
+        if results.len() > result_height {
+            let scrollbar = Scrollbar::new(ScrollbarOrientation::VerticalRight)
+                .begin_symbol(None)
+                .end_symbol(None);
+            let mut scrollbar_state = ScrollbarState::new(results.len())
+                .position(scroll);
+            frame.render_stateful_widget(
+                scrollbar,
+                chunks[2],
+                &mut scrollbar_state,
+            );
+        }
     }
+
+    (result_height, chunks[2])
 }
 
 fn fit_to_width(s: &str, max_width: usize) -> String {

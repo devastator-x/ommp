@@ -65,6 +65,12 @@ pub struct Ui {
     pub search_modal_selected: usize,
     /// Search modal scroll offset
     pub search_modal_scroll: usize,
+    /// Search modal visible result row count (set during render)
+    pub search_modal_result_height: usize,
+    /// Search modal result area rect (set during render, for mouse hit-testing)
+    pub search_modal_result_area: ratatui::layout::Rect,
+    /// Search modal hovered row index
+    pub search_modal_hover_row: Option<usize>,
     /// Playlist modal visible ("b" key)
     pub show_playlist_modal: bool,
     /// Playlist modal selected index
@@ -107,6 +113,9 @@ impl Ui {
             search_modal_results: Vec::new(),
             search_modal_selected: 0,
             search_modal_scroll: 0,
+            search_modal_result_height: 10,
+            search_modal_result_area: ratatui::layout::Rect::default(),
+            search_modal_hover_row: None,
             show_playlist_modal: false,
             playlist_modal_selected: 0,
             playlist_modal_mode: PlaylistModalMode::List,
@@ -166,16 +175,19 @@ impl Ui {
 
         // Modal overlays (rendered last, on top of everything)
         if self.show_search_modal {
-            search_modal::render_search_modal(
+            let (rh, ra) = search_modal::render_search_modal(
                 frame,
                 frame.area(),
                 &self.search_modal_input,
                 &self.search_modal_results,
                 self.search_modal_selected,
                 self.search_modal_scroll,
+                self.search_modal_hover_row,
                 app,
                 &self.theme,
             );
+            self.search_modal_result_height = rh;
+            self.search_modal_result_area = ra;
         }
 
         if self.show_help_modal {

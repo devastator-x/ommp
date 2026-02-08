@@ -154,6 +154,52 @@ impl Library {
         if query.is_empty() {
             return Vec::new();
         }
+
+        // Extension filter: *.flac, *.mp3, etc.
+        if let Some(ext) = query.strip_prefix("*.") {
+            let ext = ext.to_lowercase();
+            return self.tracks.iter().enumerate()
+                .filter(|(_, t)| {
+                    t.path.extension()
+                        .map(|e| e.to_string_lossy().to_lowercase() == ext)
+                        .unwrap_or(false)
+                })
+                .map(|(i, _)| i)
+                .collect();
+        }
+
+        // Field-specific filter: artist:, album:, genre:, title:
+        if let Some((prefix, value)) = query.split_once(':') {
+            let field = prefix.trim().to_lowercase();
+            let v = value.trim().to_lowercase();
+            if !v.is_empty() {
+                match field.as_str() {
+                    "artist" => {
+                        return self.tracks.iter().enumerate()
+                            .filter(|(_, t)| t.artist.to_lowercase().contains(&v))
+                            .map(|(i, _)| i).collect();
+                    }
+                    "album" => {
+                        return self.tracks.iter().enumerate()
+                            .filter(|(_, t)| t.album.to_lowercase().contains(&v))
+                            .map(|(i, _)| i).collect();
+                    }
+                    "genre" => {
+                        return self.tracks.iter().enumerate()
+                            .filter(|(_, t)| t.genre.to_lowercase().contains(&v))
+                            .map(|(i, _)| i).collect();
+                    }
+                    "title" => {
+                        return self.tracks.iter().enumerate()
+                            .filter(|(_, t)| t.title.to_lowercase().contains(&v))
+                            .map(|(i, _)| i).collect();
+                    }
+                    _ => {} // unknown prefix, fall through to general search
+                }
+            }
+        }
+
+        // General search: title, artist, album, genre, filename
         let q = query.to_lowercase();
         self.tracks
             .iter()
@@ -162,6 +208,10 @@ impl Library {
                 t.title.to_lowercase().contains(&q)
                     || t.artist.to_lowercase().contains(&q)
                     || t.album.to_lowercase().contains(&q)
+                    || t.genre.to_lowercase().contains(&q)
+                    || t.path.file_name()
+                        .map(|f| f.to_string_lossy().to_lowercase().contains(&q))
+                        .unwrap_or(false)
             })
             .map(|(i, _)| i)
             .collect()
