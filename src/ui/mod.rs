@@ -83,6 +83,10 @@ pub struct Ui {
     pub playlist_modal_input: String,
     /// About modal visible
     pub show_about_modal: bool,
+    /// Splash screen visible at startup
+    pub show_splash: bool,
+    /// Splash screen start time
+    pub splash_start: Option<std::time::Instant>,
     /// Current info pane view (Clock / AlbumArt / TrackInfo)
     pub info_view: InfoView,
     /// Album art pixel cache
@@ -124,12 +128,19 @@ impl Ui {
             playlist_modal_mode: PlaylistModalMode::List,
             playlist_modal_input: String::new(),
             show_about_modal: false,
+            show_splash: true,
+            splash_start: Some(std::time::Instant::now()),
             info_view: InfoView::Clock,
             album_art_cache: info_pane::AlbumArtCache::new(picker),
         }
     }
 
     pub fn render(&mut self, frame: &mut Frame, app: &App) {
+        if self.show_splash {
+            about_modal::render_splash_screen(frame, frame.area(), &self.theme);
+            return;
+        }
+
         let areas = LayoutAreas::compute(frame.area(), self.pane_widths, self.right_split);
 
         // Status bar

@@ -157,6 +157,12 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
             Ok(event) => {
                 let actions = match event {
                     Event::Key(key) => {
+                        // Dismiss splash screen on any key press
+                        if ui.show_splash {
+                            ui.show_splash = false;
+                            ui.splash_start = None;
+                            vec![]
+                        } else {
                         // Handle queue selection directly for playlist focus
                         // Skip when any modal is open
                         if app.focus == FocusedPane::Playlist
@@ -170,6 +176,7 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
                             handler::update_queue_selection(&mut app, key);
                         }
                         handler::handle_key_event(key, &app, &mut ui)
+                        }
                     }
                     Event::Mouse(mouse) => {
                         let size = terminal.size()?;
@@ -180,6 +187,15 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
                         vec![] // Will re-render on next loop
                     }
                     Event::Tick => {
+                        // Auto-dismiss splash screen after 1 second
+                        if ui.show_splash {
+                            if let Some(start) = ui.splash_start {
+                                if start.elapsed() >= Duration::from_secs(1) {
+                                    ui.show_splash = false;
+                                    ui.splash_start = None;
+                                }
+                            }
+                        }
                         // Refresh hover + focus from stored mouse position
                         let size = terminal.size()?;
                         let area = ratatui::layout::Rect::new(0, 0, size.width, size.height);
