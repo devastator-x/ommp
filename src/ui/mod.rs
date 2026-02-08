@@ -137,7 +137,18 @@ impl Ui {
 
     pub fn render(&mut self, frame: &mut Frame, app: &App) {
         if self.show_splash {
-            about_modal::render_splash_screen(frame, frame.area(), &self.theme);
+            // Timeline: 0–0.5s fade-in, 0.5–1.5s hold, 1.5–2.0s fade-out
+            let elapsed = self.splash_start
+                .map(|s| s.elapsed().as_secs_f32())
+                .unwrap_or(2.0);
+            let opacity = if elapsed < 0.5 {
+                elapsed / 0.5
+            } else if elapsed < 1.5 {
+                1.0
+            } else {
+                (1.0 - (elapsed - 1.5) / 0.5).max(0.0)
+            };
+            about_modal::render_splash_screen(frame, frame.area(), &self.theme, opacity);
             return;
         }
 

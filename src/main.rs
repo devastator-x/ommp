@@ -157,10 +157,17 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
             Ok(event) => {
                 let actions = match event {
                     Event::Key(key) => {
-                        // Dismiss splash screen on any key press
+                        // On key press during splash: jump to fade-out phase
                         if ui.show_splash {
-                            ui.show_splash = false;
-                            ui.splash_start = None;
+                            if let Some(start) = ui.splash_start {
+                                let elapsed = start.elapsed().as_secs_f32();
+                                if elapsed < 1.5 {
+                                    // Jump timeline to start of fade-out (1.5s mark)
+                                    ui.splash_start = Some(
+                                        std::time::Instant::now() - Duration::from_millis(1500)
+                                    );
+                                }
+                            }
                             vec![]
                         } else {
                         // Handle queue selection directly for playlist focus
@@ -187,10 +194,10 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
                         vec![] // Will re-render on next loop
                     }
                     Event::Tick => {
-                        // Auto-dismiss splash screen after 1 second
+                        // Auto-dismiss splash after full timeline (2s)
                         if ui.show_splash {
                             if let Some(start) = ui.splash_start {
-                                if start.elapsed() >= Duration::from_secs(1) {
+                                if start.elapsed().as_secs_f32() >= 2.0 {
                                     ui.show_splash = false;
                                     ui.splash_start = None;
                                 }

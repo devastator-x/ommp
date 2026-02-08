@@ -81,6 +81,21 @@ fn render_waveform(buf: &mut Buffer, area_x: u16, area_w: u16, y: u16, max_y: u1
     }
 }
 
+/// Lerp a foreground color toward BG_DARK by opacity (0.0 = invisible, 1.0 = full color)
+fn fade_color(target: Color, opacity: f32) -> Color {
+    match target {
+        Color::Rgb(r, g, b) => {
+            let (br, bg, bb) = (10.0_f32, 5.0_f32, 30.0_f32);
+            Color::Rgb(
+                (br + (r as f32 - br) * opacity) as u8,
+                (bg + (g as f32 - bg) * opacity) as u8,
+                (bb + (b as f32 - bb) * opacity) as u8,
+            )
+        }
+        other => other,
+    }
+}
+
 /// Helper: center a string of `display_w` columns within `area_w`, returning x offset from area.x
 fn center_x(area_x: u16, area_w: u16, display_w: u16) -> u16 {
     area_x + area_w.saturating_sub(display_w) / 2
@@ -240,20 +255,41 @@ pub fn render_about_modal(frame: &mut Frame, area: Rect, _theme: &Theme) {
     }
 }
 
-/// Render a full-screen splash screen with logo, waveform, subtitle, and tagline.
-/// Used at startup for ~1 second before the main UI appears.
-pub fn render_splash_screen(frame: &mut Frame, area: Rect, _theme: &Theme) {
+/// Render a full-screen splash screen with fade-in/fade-out.
+/// `opacity`: 0.0 = fully transparent (BG_DARK only), 1.0 = full brightness.
+pub fn render_splash_screen(frame: &mut Frame, area: Rect, _theme: &Theme, opacity: f32) {
+    let opacity = opacity.clamp(0.0, 1.0);
     let buf = frame.buffer_mut();
 
-    // Fill entire screen with dark background + scattered music notes
-    render_background(buf, area);
+    // Fill entire screen with dark background
+    let bg = Style::default().bg(BG_DARK).fg(BG_DARK);
+    for y in area.y..area.y + area.height {
+        for x in area.x..area.x + area.width {
+            buf.set_string(x, y, " ", bg);
+        }
+    }
+
+    // Scattered music notes (faded)
+    for y in area.y..area.y + area.height {
+        for x in area.x..area.x + area.width {
+            let hash = (x as u32).wrapping_mul(7).wrapping_add((y as u32).wrapping_mul(13));
+            if hash % 37 == 0 {
+                let note = NOTES[(hash as usize / 37) % NOTES.len()];
+                let color = DIM_COLORS[(hash as usize / 37 + 1) % DIM_COLORS.len()];
+                buf.set_string(
+                    x, y, note.to_string(),
+                    Style::default().fg(fade_color(color, opacity)).bg(BG_DARK),
+                );
+            }
+        }
+    }
 
     // Content height: logo(5) + waveform(1) + gap(1) + subtitle(1) + tagline(1) = 9
     let content_h: u16 = 9;
     let top_pad = area.height.saturating_sub(content_h) / 2;
     let mut cur_y = area.y + top_pad;
 
-    // --- Logo with smooth horizontal gradient ---
+    // --- Logo with smooth horizontal gradient (faded) ---
     for (row_idx, row) in LOGO.iter().enumerate() {
         if cur_y < area.y + area.height {
             let logo_x = center_x(area.x, area.width, LOGO_DISPLAY_W);
@@ -265,7 +301,7 @@ pub fn render_splash_screen(frame: &mut Frame, area: Rect, _theme: &Theme) {
                 let g = (LOGO_START.1 + (LOGO_END.1 - LOGO_START.1) * t) as u8;
                 let b = (LOGO_START.2 + (LOGO_END.2 - LOGO_START.2) * t) as u8;
                 let style = Style::default()
-                    .fg(Color::Rgb(r, g, b))
+                    .fg(fade_color(Color::Rgb(r, g, b), opacity))
                     .bg(BG_DARK)
                     .add_modifier(Modifier::BOLD);
                 buf.set_string(logo_x + col as u16, cur_y, ch.to_string(), style);
@@ -274,11 +310,28 @@ pub fn render_splash_screen(frame: &mut Frame, area: Rect, _theme: &Theme) {
         cur_y += 1;
     }
 
-    // --- Waveform below logo ---
-    render_waveform(buf, area.x, area.width, cur_y, area.y + area.height);
+    // --- Waveform below logo (faded) ---
+    if cur_y < area.y + area.height {
+        let chars: Vec<char> = WAVEFORM.chars().collect();
+        let total_w = chars.len() as u16;
+        let start_x = area.x + area.width.saturating_sub(total_w) / 2;
+        for (i, ch) in chars.iter().enumerate() {
+            let x = start_x + i as u16;
+            if x >= area.x && x < area.x + area.width {
+                let frac = i as f32 / chars.len().max(1) as f32;
+                let r = (frac * 160.0) as u8;
+                let g = (255.0 - frac * 195.0) as u8;
+                let b = (255.0 - frac * 15.0) as u8;
+                buf.set_string(
+                    x, cur_y, ch.to_string(),
+                    Style::default().fg(fade_color(Color::Rgb(r, g, b), opacity)).bg(BG_DARK),
+                );
+            }
+        }
+    }
     cur_y += 2;
 
-    // --- Subtitle ---
+    // --- Subtitle (faded) ---
     let subtitle = "Oh My Music Player";
     let sub_w = subtitle.len() as u16;
     if cur_y < area.y + area.height {
@@ -286,19 +339,22 @@ pub fn render_splash_screen(frame: &mut Frame, area: Rect, _theme: &Theme) {
         buf.set_string(
             x, cur_y, subtitle,
             Style::default()
-                .fg(NEON_CYAN)
+                .fg(fade_color(NEON_CYAN, opacity))
                 .bg(BG_DARK)
                 .add_modifier(Modifier::BOLD | Modifier::ITALIC),
         );
     }
     cur_y += 1;
 
-    // --- Tagline ---
+    // --- Tagline (faded) ---
     let tagline = "Terminal music, your way";
     let tag_w = tagline.len() as u16;
     if cur_y < area.y + area.height {
         let x = center_x(area.x, area.width, tag_w);
-        buf.set_string(x, cur_y, tagline, Style::default().fg(NEON_CYAN).bg(BG_DARK));
+        buf.set_string(
+            x, cur_y, tagline,
+            Style::default().fg(fade_color(NEON_CYAN, opacity)).bg(BG_DARK),
+        );
     }
 }
 
