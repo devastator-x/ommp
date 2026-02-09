@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="assets/logo.svg" alt="OMMP" width="560">
+  <img src="assets/ommp_logo.png" alt="OMMP" width="560">
 </p>
 
 <p align="center">
