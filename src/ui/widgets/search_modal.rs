@@ -9,6 +9,7 @@ use crate::ui::theme::Theme;
 
 const HOVER_BG: Color = Color::Indexed(238);
 
+#[allow(clippy::too_many_arguments)]
 pub fn render_search_modal(
     frame: &mut Frame,
     area: Rect,

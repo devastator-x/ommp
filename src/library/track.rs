@@ -40,7 +40,7 @@ impl Track {
                     .map(|s| s.to_string())
                     .unwrap_or_default();
                 let genre_str: String = tag.genre().map(|s| s.to_string()).unwrap_or_default();
-                let track_num = tag.track().map(|t| t as u32);
+                let track_num = tag.track();
                 let lyrics_str: Option<String> = tag
                     .get_string(&ItemKey::Lyrics)
                     .map(|s| s.to_string());

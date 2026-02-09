@@ -295,7 +295,7 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
     // 2. Explicitly drop app (triggers AudioEngine → player thread shutdown)
     // 3. Brief sleep so the player thread can exit and drop OutputStream silently
     unsafe {
-        let devnull = libc::open(b"/dev/null\0".as_ptr() as *const _, libc::O_WRONLY);
+        let devnull = libc::open(c"/dev/null".as_ptr(), libc::O_WRONLY);
         if devnull >= 0 {
             libc::dup2(devnull, 2);
             libc::close(devnull);

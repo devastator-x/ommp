@@ -143,23 +143,12 @@ impl Default for PlaybackState {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct QueueState {
     pub tracks: Vec<usize>,
     pub current_index: Option<usize>,
     pub selected_index: usize,
     pub scroll_offset: usize,
-}
-
-impl Default for QueueState {
-    fn default() -> Self {
-        Self {
-            tracks: Vec::new(),
-            current_index: None,
-            selected_index: 0,
-            scroll_offset: 0,
-        }
-    }
 }
 
 #[derive(Debug, Clone)]

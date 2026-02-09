@@ -10,10 +10,10 @@ pub fn spawn_input_thread(tx: Sender<Event>) -> std::thread::JoinHandle<()> {
             if event::poll(Duration::from_millis(100)).unwrap_or(false) {
                 match event::read() {
                     Ok(CtEvent::Key(key)) => {
-                        if key.kind == KeyEventKind::Press {
-                            if tx.send(Event::Key(key)).is_err() {
-                                break;
-                            }
+                        if key.kind == KeyEventKind::Press
+                            && tx.send(Event::Key(key)).is_err()
+                        {
+                            break;
                         }
                     }
                     Ok(CtEvent::Mouse(mouse)) => {

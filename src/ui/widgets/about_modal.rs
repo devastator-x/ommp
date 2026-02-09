@@ -48,7 +48,7 @@ fn render_background(buf: &mut Buffer, area: Rect) {
     for y in area.y..area.y + area.height {
         for x in area.x..area.x + area.width {
             let hash = (x as u32).wrapping_mul(7).wrapping_add((y as u32).wrapping_mul(13));
-            if hash % 37 == 0 {
+            if hash.is_multiple_of(37) {
                 let note = NOTES[(hash as usize / 37) % NOTES.len()];
                 let color = DIM_COLORS[(hash as usize / 37 + 1) % DIM_COLORS.len()];
                 buf.set_string(x, y, note.to_string(), Style::default().fg(color).bg(BG_DARK));
@@ -273,7 +273,7 @@ pub fn render_splash_screen(frame: &mut Frame, area: Rect, _theme: &Theme, opaci
     for y in area.y..area.y + area.height {
         for x in area.x..area.x + area.width {
             let hash = (x as u32).wrapping_mul(7).wrapping_add((y as u32).wrapping_mul(13));
-            if hash % 37 == 0 {
+            if hash.is_multiple_of(37) {
                 let note = NOTES[(hash as usize / 37) % NOTES.len()];
                 let color = DIM_COLORS[(hash as usize / 37 + 1) % DIM_COLORS.len()];
                 buf.set_string(

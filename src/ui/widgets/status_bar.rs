@@ -148,7 +148,7 @@ pub fn render_status_bar(frame: &mut Frame, area: Rect, app: &App, theme: &Theme
 
     let is_bookmarked = app.queue.current_index
         .and_then(|qi| app.queue.tracks.get(qi))
-        .map_or(false, |&ti| {
+        .is_some_and(|&ti| {
             app.playlists.iter().any(|pl| pl.tracks.contains(&ti))
         });
     let bookmark_style = if is_bookmarked {

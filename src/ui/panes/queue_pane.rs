@@ -188,8 +188,6 @@ impl Pane for QueuePane {
                 // Row background for gap spans (keeps selection/hover highlight continuous)
                 let row_bg = if is_selected && focused {
                     sel_style
-                } else if is_current && is_hovered {
-                    Style::default().bg(HOVER_BG)
                 } else if is_hovered {
                     Style::default().bg(HOVER_BG)
                 } else {

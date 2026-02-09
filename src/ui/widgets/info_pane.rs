@@ -225,9 +225,9 @@ fn render_clock(frame: &mut Frame, area: Rect, _theme: &Theme) {
                     break;
                 }
                 let display_ch = if ch == '█' { '█' } else { ' ' };
-                frame.buffer_mut().cell_mut((x, y)).map(|cell| {
+                if let Some(cell) = frame.buffer_mut().cell_mut((x, y)) {
                     cell.set_char(display_ch).set_style(style);
-                });
+                }
                 x += 1;
             }
             // Gap between digits

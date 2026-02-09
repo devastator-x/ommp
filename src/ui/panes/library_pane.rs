@@ -280,10 +280,10 @@ impl Pane for LibraryPane {
                 if self.selected < count - 1 {
                     self.selected += 1;
                     // Skip separators when navigating
-                    if matches!(entries.get(self.selected), Some(LibraryEntry::Separator)) {
-                        if self.selected < count - 1 {
-                            self.selected += 1;
-                        }
+                    if matches!(entries.get(self.selected), Some(LibraryEntry::Separator))
+                        && self.selected < count - 1
+                    {
+                        self.selected += 1;
                     }
                 }
                 None
@@ -292,10 +292,10 @@ impl Pane for LibraryPane {
                 if self.selected > 0 {
                     self.selected -= 1;
                     // Skip separators when navigating
-                    if matches!(entries.get(self.selected), Some(LibraryEntry::Separator)) {
-                        if self.selected > 0 {
-                            self.selected -= 1;
-                        }
+                    if matches!(entries.get(self.selected), Some(LibraryEntry::Separator))
+                        && self.selected > 0
+                    {
+                        self.selected -= 1;
                     }
                 }
                 None

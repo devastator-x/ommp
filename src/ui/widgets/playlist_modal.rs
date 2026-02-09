@@ -102,7 +102,7 @@ pub fn render_playlist_modal(
                 .map(|(i, pl)| {
                     let is_selected = i == selected;
                     let already_in = current_track_idx
-                        .map_or(false, |ti| pl.tracks.contains(&ti));
+                        .is_some_and(|ti| pl.tracks.contains(&ti));
 
                     let check = if already_in { "\u{F00C} " } else { "  " };
                     let icon = "\u{F005} ";

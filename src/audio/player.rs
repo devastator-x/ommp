@@ -289,14 +289,11 @@ fn run_playback_loop(
                         sink.set_volume(vol);
                     }
                     Ok(PlayerCommand::Seek(secs)) => {
-                        match sink.try_seek(Duration::from_secs_f64(secs)) {
-                            Ok(_) => {
-                                accumulated_secs = secs;
-                                if !is_paused {
-                                    play_start = Some(Instant::now());
-                                }
+                        if sink.try_seek(Duration::from_secs_f64(secs)).is_ok() {
+                            accumulated_secs = secs;
+                            if !is_paused {
+                                play_start = Some(Instant::now());
                             }
-                            Err(_) => {}
                         }
                     }
                     Err(_) => return,
