@@ -66,18 +66,18 @@ ommp
 <details>
 <summary><code>ommp: command not found</code>?</summary>
 
-`~/.cargo/bin`이 PATH에 등록되어 있지 않을 수 있습니다. 아래 줄을 `~/.bashrc` 또는 `~/.zshrc`에 추가하세요:
+`~/.cargo/bin` may not be in your PATH. Add this line to your `~/.bashrc` or `~/.zshrc`:
 
 ```bash
 export PATH="$HOME/.cargo/bin:$PATH"
 ```
 
-터미널을 재시작하면 적용됩니다.
+Restart your terminal to apply.
 
 </details>
 
 <details>
-<summary>소스에서 직접 빌드하기</summary>
+<summary>Build from source</summary>
 
 ```bash
 git clone https://github.com/devastator-x/ommp.git
@@ -90,81 +90,81 @@ cargo build --release
 
 ## Usage
 
-`~/Music` 폴더에 음악 파일을 넣고 `ommp`를 실행하면 자동으로 라이브러리를 스캔합니다. 하위 폴더도 모두 탐색합니다.
+Place your music files in `~/Music` and run `ommp`. It will automatically scan all files and subdirectories.
 
-앨범 아트는 음악 파일과 같은 폴더에 `cover.jpg`, `folder.jpg`, `front.jpg` 등의 이름으로 넣어두면 자동으로 인식됩니다.
+Album art is detected automatically — just place `cover.jpg`, `folder.jpg`, `front.jpg`, or any image file in the same directory as your tracks.
 
 ### Browsing
 
-화면은 3개의 패널로 나뉩니다:
+The screen is split into three panels:
 
-- **왼쪽** — 라이브러리 탐색 (탭에 따라 아티스트, 앨범, 장르 등)
-- **가운데** — 재생 대기열 (Queue)
-- **오른쪽** — 앨범 아트 / 시계 (위) + 가사 (아래)
+- **Left** — Library browser (artists, albums, genres, etc. depending on the active tab)
+- **Center** — Play queue
+- **Right** — Album art / Clock (top) + Lyrics (bottom)
 
-상단 탭으로 탐색 모드를 전환합니다: Queue, Directories, Artists, Albums, Genre, Format, Playlists
+Switch browsing modes using the tabs at the top: Queue, Directories, Artists, Albums, Genre, Format, Playlists
 
 ### Search
 
-`Ctrl+E, s`로 검색 창을 열 수 있습니다. 입력하는 즉시 결과가 필터링됩니다.
+Press `Ctrl+E, s` to open the search modal. Results filter as you type.
 
-특정 필드로 검색하려면:
+You can also search by specific fields:
 
-- `artist:radiohead` — 아티스트명으로 검색
-- `album:ok computer` — 앨범명으로 검색
-- `genre:rock` — 장르로 검색
-- `*.flac` — 파일 포맷으로 필터
+- `artist:radiohead` — search by artist
+- `album:ok computer` — search by album
+- `genre:rock` — search by genre
+- `*.flac` — filter by format
 
 ## Keybindings
 
-앱 안에서 `Ctrl+E, h`를 누르면 전체 단축키 목록을 볼 수 있습니다.
+Press `Ctrl+E, h` inside the app to view the full keybinding list at any time.
 
 ### Playback
 
 | Key | Action |
 |-----|--------|
-| `Space` | 재생 / 일시정지 |
-| `n` / `N` | 다음 곡 / 이전 곡 |
-| `+` / `-` | 볼륨 올리기 / 내리기 |
-| `Left` / `Right` | 5초 뒤로 / 앞으로 |
-| `s` | 셔플 토글 |
-| `r` | 반복 모드 전환 (끄기 / 전체 / 한곡) |
+| `Space` | Play / Pause |
+| `n` / `N` | Next / Previous track |
+| `+` / `-` | Volume up / down |
+| `Left` / `Right` | Seek backward / forward 5s |
+| `s` | Toggle shuffle |
+| `r` | Cycle repeat (off / all / one) |
 
 ### Navigation
 
 | Key | Action |
 |-----|--------|
-| `j` / `k` | 아래 / 위 이동 |
-| `h` / `l` | 이전 / 다음 패널로 이동 |
-| `Tab` / `Shift+Tab` | 패널 순환 |
-| `1`–`7` | 탭 전환 |
-| `Enter` | 선택한 항목 재생 |
-| `g` / `G` | 목록 맨 위 / 맨 아래로 |
-| `d` | 대기열에서 제거 |
-| `b` | 플레이리스트에 추가 |
-| `p` | 정보 패널 전환 (시계 / 앨범아트) |
-| `q` | 종료 |
+| `j` / `k` | Move down / up |
+| `h` / `l` | Focus previous / next panel |
+| `Tab` / `Shift+Tab` | Cycle panel focus |
+| `1`–`7` | Switch tab |
+| `Enter` | Play selected item |
+| `g` / `G` | Jump to top / bottom |
+| `d` | Remove from queue |
+| `b` | Add to playlist |
+| `p` | Toggle info panel (Clock / Album Art) |
+| `q` | Quit |
 
-### Chord commands (`Ctrl+E` 후 키 입력)
+### Chord commands (press `Ctrl+E`, then a key)
 
 | Key | Action |
 |-----|--------|
-| `Ctrl+E, s` | 검색 |
-| `Ctrl+E, h` | 도움말 |
-| `Ctrl+E, r` | 패널 크기 조절 모드 |
-| `Ctrl+E, i` | OMMP 정보 |
-| `Ctrl+E, l` | 라이브러리 다시 스캔 |
+| `Ctrl+E, s` | Search |
+| `Ctrl+E, h` | Help |
+| `Ctrl+E, r` | Panel resize mode |
+| `Ctrl+E, i` | About OMMP |
+| `Ctrl+E, l` | Rescan library |
 
 ### Mouse
 
 | Action | Effect |
 |--------|--------|
-| 탭 클릭 | 탭 전환 |
-| 패널 클릭 | 패널 포커스 + 항목 선택 |
-| 트랙 더블클릭 | 즉시 재생 |
-| 패널 경계 드래그 | 패널 크기 조절 |
-| 프로그레스 바 클릭 | 해당 위치로 이동 |
-| 스크롤 | 목록 스크롤 |
+| Click tab | Switch tab |
+| Click panel | Focus panel + select item |
+| Double-click track | Play immediately |
+| Drag panel border | Resize panels |
+| Click progress bar | Seek to position |
+| Scroll wheel | Scroll lists |
 
 ## License
 
