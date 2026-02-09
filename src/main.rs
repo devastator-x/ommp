@@ -290,6 +290,20 @@ fn run_app(terminal: &mut Terminal<CrosstermBackend<io::Stdout>>) -> Result<()> 
         eprintln!("Warning: failed to save state: {}", e);
     }
 
+    // Suppress rodio's "Dropping OutputStream" message:
+    // 1. Redirect stderr to /dev/null
+    // 2. Explicitly drop app (triggers AudioEngine → player thread shutdown)
+    // 3. Brief sleep so the player thread can exit and drop OutputStream silently
+    unsafe {
+        let devnull = libc::open(b"/dev/null\0".as_ptr() as *const _, libc::O_WRONLY);
+        if devnull >= 0 {
+            libc::dup2(devnull, 2);
+            libc::close(devnull);
+        }
+    }
+    drop(app);
+    std::thread::sleep(Duration::from_millis(50));
+
     Ok(())
 }
 
